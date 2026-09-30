@@ -36,38 +36,38 @@
   ],
   "services": [
     {
-      "name": "Sprinkler Repair",
-      "link": "sprinkler-repair.html",
-      "summary": "Dry spots, leaks, broken heads or a zone that won't shut off. We find the real cause and fix it once. $75 diagnostic, waived when we do the repair.",
-      "photo": "https://images.pexels.com/photos/23408532/pexels-photo-23408532.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "photo_alt": "Rotating sprinkler watering a green lawn"
-    },
-    {
       "name": "Sprinkler System Installation",
       "link": "sprinkler-installation.html",
       "summary": "A new system zoned for your yard's sun, shade and slopes. Free estimate, 1-year warranty, and your first blowout free.",
-      "photo": "https://images.pexels.com/photos/25283561/pexels-photo-25283561.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "photo_alt": "Close-up of a sprinkler head spraying a lawn in the sun"
+      "photo": "images/work/install-trench.webp",
+      "photo_alt": "Freshly dug irrigation trench with new line along a ranch fence"
+    },
+    {
+      "name": "Sprinkler Repair",
+      "link": "sprinkler-repair.html",
+      "summary": "Dry spots, leaks, broken heads or a zone that won't shut off. We find the real cause and fix it once. $75 diagnostic, waived when we do the repair.",
+      "photo": "images/work/repair-split-pipe.webp",
+      "photo_alt": "Split irrigation line spraying water in a dug-out hole in a lawn"
     },
     {
       "name": "Sprinkler Blowouts",
       "link": "sprinkler-blowouts.html",
       "summary": "We clear every zone with compressed air before the first hard freeze, so your pipes and backflow make it through winter.",
-      "photo": "https://images.pexels.com/photos/14796777/pexels-photo-14796777.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "photo_alt": "Frost on blades of grass on a winter morning"
+      "photo": "https://images.pexels.com/photos/14796777/pexels-photo-14796777.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1100&h=1100",
+      "photo_alt": "Frost-covered grass blades on a freezing morning"
     },
     {
       "name": "Spring Start-Ups",
       "link": "spring-start-up.html",
       "summary": "We turn the water back on slowly, run every zone, adjust heads and fix what winter broke.",
-      "photo": "https://images.pexels.com/photos/37720375/pexels-photo-37720375.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "photo_alt": "Sprinkler spraying sparkling water over a sunny lawn"
+      "photo": "images/work/heads-rock-border.webp",
+      "photo_alt": "Row of sprinkler heads running along a lawn beside a rock border"
     },
     {
       "name": "Sod Installation",
       "link": "sod-installation.html",
       "summary": "Fresh sod on properly graded soil, with your sprinklers set for new-lawn watering from day one.",
-      "photo": "https://images.pexels.com/photos/5231236/pexels-photo-5231236.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "photo": "https://images.pexels.com/photos/5231236/pexels-photo-5231236.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1100&h=1100",
       "photo_alt": "Worker rolling out fresh sod over prepared soil"
     }
   ],

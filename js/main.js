@@ -15,7 +15,7 @@
   function serviceCard(s, city, i) {
     var big = i === 0;
     return '<a href="' + esc(s.link || "contact.html") + '" class="card-link group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5' + (big ? ' sm:col-span-2 lg:row-span-2' : '') + '">' +
-      '<div class="overflow-hidden ' + (big ? 'aspect-[16/10] lg:aspect-auto lg:flex-1' : 'aspect-[16/10]') + '"><img class="photo h-full w-full" src="' + esc(s.photo) + '" alt="' + esc(s.photo_alt) + '" width="1200" height="750" loading="lazy" decoding="async"></div>' +
+      '<div class="overflow-hidden ' + (big ? 'aspect-[16/10] lg:aspect-auto lg:flex-1' : 'aspect-[16/10]') + '"><img class="photo h-full w-full" src="' + esc(s.photo) + '" alt="' + esc(s.photo_alt) + '" width="1100" height="1100" loading="lazy" decoding="async"></div>' +
       '<div class="flex flex-col gap-2 p-6"><h3 class="' + (big ? 'text-2xl' : 'text-xl') + ' font-bold">' + esc(s.name) + ' in ' + esc(city) + '</h3>' +
       '<p class="text-base text-muted">' + esc(s.summary) + '</p>' +
       '<span class="mt-1 font-display text-[15px] font-bold text-water">See ' + esc(String(s.name).toLowerCase()) + ' details →</span></div></a>';
@@ -156,6 +156,32 @@
         .then(function (r) { done(r.ok, false); })
         .catch(function () { done(false, false); });
     });
+  });
+
+  /* ---------- Before/after sliders ---------- */
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll("[data-compare]").forEach(function (el) {
+    var input = el.querySelector("input[type=range]"), touched = false;
+    function set(v) { el.style.setProperty("--pos", v + "%"); }
+    input.addEventListener("input", function () { touched = true; set(input.value); });
+    if (reduce || !("IntersectionObserver" in window)) return;
+    // One gentle sweep the first time it scrolls into view, so visitors see it moves
+    var io = new IntersectionObserver(function (entries) {
+      if (!entries[0].isIntersecting) return;
+      io.disconnect();
+      var start = null, keys = [50, 22, 78, 50], dur = 2200;
+      function step(t) {
+        if (touched) return;
+        if (start === null) start = t;
+        var p = Math.min(1, (t - start) / dur), seg = Math.min(2, Math.floor(p * 3)), lp = p * 3 - seg;
+        var ease = lp < 0.5 ? 2 * lp * lp : 1 - Math.pow(-2 * lp + 2, 2) / 2;
+        var v = keys[seg] + (keys[seg + 1] - keys[seg]) * ease;
+        set(v); input.value = Math.round(v);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      setTimeout(function () { requestAnimationFrame(step); }, 250 + Array.prototype.indexOf.call(document.querySelectorAll("[data-compare]"), el) * 180);
+    }, { threshold: 0.5 });
+    io.observe(el);
   });
 
   document.querySelectorAll("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
