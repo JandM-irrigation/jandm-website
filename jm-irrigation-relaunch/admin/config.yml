@@ -1,0 +1,69 @@
+# Decap CMS configuration for jmirrigationco.com
+# Login: GitHub (via Netlify's OAuth provider). Anyone with write access to the
+# repository (Juan's account and MOA as collaborator) can sign in at /admin.
+# Every "Publish" commits to GitHub and Netlify redeploys in about a minute.
+backend:
+  name: github
+  repo: JandM-irrigation/jandm-website
+  branch: main
+  base_url: https://api.netlify.com
+  site_domain: jmirrigationco.com
+  commit_messages:
+    update: "CMS: update {{slug}}"
+
+site_url: https://jmirrigationco.com
+display_url: https://jmirrigationco.com
+logo_url: https://jmirrigationco.com/favicon.svg
+media_folder: images/uploads
+public_folder: /images/uploads
+
+collections:
+  - name: settings
+    label: Website content
+    editor:
+      preview: false
+    files:
+      - name: site
+        label: Phone, banners, services & reviews
+        file: content/site.json
+        format: json
+        fields:
+          - { label: "Phone number", name: phone, widget: string, hint: "Shown everywhere on the site, e.g. 303-549-0712" }
+          - { label: "Hours", name: hours, widget: string }
+          - { label: "Hero availability badge", name: availability_badge, widget: string, hint: "Keep it accurate, e.g. Open Mon–Sat, 7am–5pm · Call or text" }
+          - { label: "Google review link", name: google_review_url, widget: string, hint: "Link for the Leave Us a Google Review button" }
+          - { label: "GoHighLevel webhook URL", name: ghl_webhook_url, widget: string, required: false, hint: "Optional. When set, every quote request is also copied to GoHighLevel." }
+          - label: "Promotional banners"
+            name: banners
+            widget: list
+            summary: "{{fields.start}} to {{fields.end}}: {{fields.text}}"
+            hint: "The orange bar at the top. Each banner shows between its start and end dates (MM-DD), every year."
+            fields:
+              - { label: "Banner text", name: text, widget: text }
+              - { label: "Button text", name: button_text, widget: string }
+              - { label: "Button link", name: button_link, widget: string, hint: "A page like sprinkler-blowouts.html or contact.html" }
+              - { label: "Start (MM-DD)", name: start, widget: string, pattern: ['^\d{2}-\d{2}$', "Use MM-DD, e.g. 09-01"] }
+              - { label: "End (MM-DD)", name: end, widget: string, pattern: ['^\d{2}-\d{2}$', "Use MM-DD, e.g. 11-15"] }
+          - label: "Services"
+            name: services
+            widget: list
+            summary: "{{fields.name}}"
+            hint: "The first service shows as the large card. Headers read '<name> in <city>'."
+            fields:
+              - { label: "Service name", name: name, widget: string }
+              - { label: "Page link", name: link, widget: string, hint: "e.g. sprinkler-repair.html (use contact.html if there's no page)" }
+              - { label: "Short description", name: summary, widget: text }
+              - { label: "Photo", name: photo, widget: image, choose_url: true }
+              - { label: "Photo description (alt text)", name: photo_alt, widget: string }
+          - label: "Reviews"
+            name: reviews
+            widget: list
+            summary: "{{fields.name}} ({{fields.rating}}★)"
+            hint: "Paste real Google reviews word for word. Turn off 'Sample' on real ones; the 'Sample reviews' label disappears once none are samples."
+            fields:
+              - { label: "Name", name: name, widget: string, hint: "First name and last initial" }
+              - { label: "City", name: location, widget: string }
+              - { label: "When", name: when, widget: string, required: false, hint: "e.g. 2 weeks ago" }
+              - { label: "Stars", name: rating, widget: number, value_type: int, min: 1, max: 5, default: 5 }
+              - { label: "Review text", name: text, widget: text }
+              - { label: "Sample (not a real review)", name: sample, widget: boolean, default: false }

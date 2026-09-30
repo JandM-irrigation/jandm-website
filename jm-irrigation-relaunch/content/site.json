@@ -1,0 +1,100 @@
+{
+  "phone": "303-549-0712",
+  "hours": "Mon–Sat, 7am–5pm",
+  "availability_badge": "Open Mon–Sat, 7am–5pm · Call or text",
+  "google_review_url": "https://share.google/wZBxg74LB6f4F7rDb",
+  "ghl_webhook_url": "",
+  "banners": [
+    {
+      "text": "Freeze season is coming. Book your sprinkler blowout now. New J&M installs get their first blowout free.",
+      "button_text": "Book a Blowout",
+      "button_link": "sprinkler-blowouts.html",
+      "start": "09-01",
+      "end": "11-15"
+    },
+    {
+      "text": "Planning a new lawn or sprinkler system for spring? Get on our schedule early.",
+      "button_text": "Get a Quote",
+      "button_link": "contact.html",
+      "start": "11-16",
+      "end": "02-28"
+    },
+    {
+      "text": "Spring is here. Book your sprinkler start-up before the rush.",
+      "button_text": "Book a Start-Up",
+      "button_link": "spring-start-up.html",
+      "start": "03-01",
+      "end": "05-15"
+    },
+    {
+      "text": "Brown spots or high water bills? We'll find the problem.",
+      "button_text": "Schedule a Repair",
+      "button_link": "sprinkler-repair.html",
+      "start": "05-16",
+      "end": "08-31"
+    }
+  ],
+  "services": [
+    {
+      "name": "Sprinkler Repair",
+      "link": "sprinkler-repair.html",
+      "summary": "Dry spots, leaks, broken heads or a zone that won't shut off. We find the real cause and fix it once. $75 diagnostic, waived when we do the repair.",
+      "photo": "https://images.pexels.com/photos/23408532/pexels-photo-23408532.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "photo_alt": "Rotating sprinkler watering a green lawn"
+    },
+    {
+      "name": "Sprinkler System Installation",
+      "link": "sprinkler-installation.html",
+      "summary": "A new system zoned for your yard's sun, shade and slopes. Free estimate, 1-year warranty, and your first blowout free.",
+      "photo": "https://images.pexels.com/photos/25283561/pexels-photo-25283561.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "photo_alt": "Close-up of a sprinkler head spraying a lawn in the sun"
+    },
+    {
+      "name": "Sprinkler Blowouts",
+      "link": "sprinkler-blowouts.html",
+      "summary": "We clear every zone with compressed air before the first hard freeze, so your pipes and backflow make it through winter.",
+      "photo": "https://images.pexels.com/photos/14796777/pexels-photo-14796777.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "photo_alt": "Frost on blades of grass on a winter morning"
+    },
+    {
+      "name": "Spring Start-Ups",
+      "link": "spring-start-up.html",
+      "summary": "We turn the water back on slowly, run every zone, adjust heads and fix what winter broke.",
+      "photo": "https://images.pexels.com/photos/37720375/pexels-photo-37720375.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "photo_alt": "Sprinkler spraying sparkling water over a sunny lawn"
+    },
+    {
+      "name": "Sod Installation",
+      "link": "sod-installation.html",
+      "summary": "Fresh sod on properly graded soil, with your sprinklers set for new-lawn watering from day one.",
+      "photo": "https://images.pexels.com/photos/5231236/pexels-photo-5231236.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "photo_alt": "Worker rolling out fresh sod over prepared soil"
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Maria G.",
+      "location": "Aurora",
+      "when": "Sample",
+      "rating": 5,
+      "text": "Our back zone was dry all summer and two other companies just swapped heads. Juan found a crushed pipe under the patio, fixed it in one visit and tested every zone before leaving.",
+      "sample": true
+    },
+    {
+      "name": "Derek T.",
+      "location": "Parker",
+      "when": "Sample",
+      "rating": 5,
+      "text": "New build with bare dirt. J&M put in the sprinkler system and the sod in two days, gave us a clear price up front and cleaned up everything.",
+      "sample": true
+    },
+    {
+      "name": "Rosa M.",
+      "location": "Thornton",
+      "when": "Sample",
+      "rating": 4,
+      "text": "The blowout was quick and they showed me where my backflow shutoff is. It took a few days to get on the October schedule, so book early.",
+      "sample": true
+    }
+  ]
+}
