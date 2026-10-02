@@ -73,28 +73,20 @@
   ],
   "reviews": [
     {
-      "name": "Maria G.",
-      "location": "Aurora",
-      "when": "Sample",
+      "name": "Deon W.",
+      "location": "",
+      "when": "October 2026",
       "rating": 5,
-      "text": "Our back zone was dry all summer and two other companies just swapped heads. Juan found a crushed pipe under the patio, fixed it in one visit and tested every zone before leaving.",
-      "sample": true
+      "sample": false,
+      "text": "Fantastic company. Juan came to my mother's house which was over an hour away from him. He looked at the complete sprinkler system that was already existing but not in use. He determined he could reuse what was existing and just make repairs. Within 2 days the sprinkler system was brought back to life tested and verified. My mother was happy, She has her sprinkler system back. I then had him come to my house because I had a bunch of dead spots in my grass, he changed the orientation of my sprinkler heads and fixed all my issues. He did this as a courtesy even though we paid him but I appreciate his work ethic and his pride in the work he does. Definitely 10 out of 10."
     },
     {
-      "name": "Derek T.",
-      "location": "Parker",
-      "when": "Sample",
+      "name": "Shae M.",
+      "location": "",
+      "when": "October 2026",
       "rating": 5,
-      "text": "New build with bare dirt. J&M put in the sprinkler system and the sod in two days, gave us a clear price up front and cleaned up everything.",
-      "sample": true
-    },
-    {
-      "name": "Rosa M.",
-      "location": "Thornton",
-      "when": "Sample",
-      "rating": 4,
-      "text": "The blowout was quick and they showed me where my backflow shutoff is. It took a few days to get on the October schedule, so book early.",
-      "sample": true
+      "sample": false,
+      "text": "A fantastic crew, really pro work, fair in pricing, customer service is great. Highly recommended"
     }
   ]
 }

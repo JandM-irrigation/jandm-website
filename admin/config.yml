@@ -59,10 +59,10 @@ collections:
             name: reviews
             widget: list
             summary: "{{fields.name}} ({{fields.rating}}★)"
-            hint: "Paste real Google reviews word for word. Turn off 'Sample' on real ones; the 'Sample reviews' label disappears once none are samples."
+            hint: "Paste real Google reviews word for word. Turn off 'Sample' on real ones; the 'Sample reviews' label disappears once none are samples. When live Google reviews are connected, these show only if Google can't be reached."
             fields:
               - { label: "Name", name: name, widget: string, hint: "First name and last initial" }
-              - { label: "City", name: location, widget: string }
+              - { label: "City", name: location, widget: string, required: false, hint: "Leave empty if the review doesn't say" }
               - { label: "When", name: when, widget: string, required: false, hint: "e.g. 2 weeks ago" }
               - { label: "Stars", name: rating, widget: number, value_type: int, min: 1, max: 5, default: 5 }
               - { label: "Review text", name: text, widget: text }

@@ -23,9 +23,11 @@
   function reviewCard(r) {
     var n = Math.max(0, Math.min(5, +r.rating || 5)), stars = "";
     for (var i = 0; i < 5; i++) stars += '<span class="' + (i < n ? 'text-[#F5B301]' : 'text-line') + '">' + STAR + '</span>';
+    var meta = [r.location, r.when].filter(Boolean).map(esc).join(' · ');
+    var name = /^https:\/\//.test(r.url || "") ? '<a class="hover:underline" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' : esc(r.name);
     return '<article' + (r.sample ? ' data-placeholder="review"' : '') + ' class="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-card ring-1 ring-black/5">' +
       '<div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-full bg-forest font-display text-base font-bold text-white">' + esc(String(r.name || "?").charAt(0)) + '</span>' +
-      '<div><p class="font-semibold leading-tight text-ink">' + esc(r.name) + '</p><p class="text-sm text-muted">' + esc(r.location) + (r.when ? ' · ' + esc(r.when) : '') + '</p></div></div>' +
+      '<div><p class="font-semibold leading-tight text-ink">' + name + '</p><p class="text-sm text-muted">' + meta + '</p></div></div>' +
       '<div class="flex gap-0.5" role="img" aria-label="' + n + ' out of 5 stars">' + stars + '</div>' +
       '<p class="text-base text-ink/90">' + esc(r.text) + '</p></article>';
   }
@@ -72,18 +74,41 @@
       var city = el.getAttribute("data-city") || "Denver";
       el.innerHTML = c.services.map(function (s, i) { return serviceCard(s, city, i); }).join("");
     });
-    document.querySelectorAll("[data-reviews]").forEach(function (el) {
-      if (!c.reviews || !c.reviews.length) return;
-      el.innerHTML = c.reviews.map(reviewCard).join("");
-      var chip = document.querySelector("[data-sample-chip]");
-      if (chip) chip.hidden = !c.reviews.some(function (r) { return r.sample; });
-    });
+    if (!google) showReviews(c.reviews);
+  }
+
+  /* ---------- Reviews ---------- */
+  var google = null; // live Google reviews, once /api/reviews answers
+  function showReviews(list) {
+    if (!list || !list.length) return;
+    document.querySelectorAll("[data-reviews]").forEach(function (el) { el.innerHTML = list.map(reviewCard).join(""); });
+    var chip = document.querySelector("[data-sample-chip]");
+    if (chip) chip.hidden = !list.some(function (r) { return r.sample; });
+  }
+  // The newest reviews straight from the Google Business Profile (netlify/functions/reviews.mjs).
+  // If it isn't set up or fails, the reviews from the CMS stay on the page.
+  function loadGoogleReviews() {
+    if (!LIVE || !document.querySelector("[data-reviews]")) return;
+    fetch("/api/reviews")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (g) {
+        if (!g || !g.reviews || !g.reviews.length) return;
+        google = g;
+        showReviews(g.reviews);
+        var sum = document.querySelector("[data-review-summary]");
+        if (sum && g.rating && g.count) {
+          sum.textContent = Number(g.rating).toFixed(1) + " out of 5 from " + g.count + " Google review" + (g.count === 1 ? "" : "s");
+          sum.hidden = false;
+        }
+      })
+      .catch(function () {});
   }
 
   fetch("content/site.json", { cache: "no-cache" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (c) { if (c) { content = c; apply(c); } })
     .catch(function () {});
+  loadGoogleReviews();
 
   /* ---------- Mobile menu ---------- */
   var toggle = document.querySelector("[data-menu-toggle]"), menu = document.getElementById("mobile-menu");
