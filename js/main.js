@@ -87,8 +87,10 @@
   }
   // The newest reviews straight from the Google Business Profile (netlify/functions/reviews.mjs).
   // If it isn't set up or fails, the reviews from the CMS stay on the page.
+  // Off for now: set to true once the Google API key and Place ID are added in Netlify.
+  var GOOGLE_REVIEWS = false;
   function loadGoogleReviews() {
-    if (!LIVE || !document.querySelector("[data-reviews]")) return;
+    if (!GOOGLE_REVIEWS || !LIVE || !document.querySelector("[data-reviews]")) return;
     fetch("/api/reviews")
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (g) {
