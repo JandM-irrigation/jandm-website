@@ -1,0 +1,5 @@
+# Unpublished client material (ranch photos awaiting publication permission)
+.private/
+# Local review build
+.preview/
+node_modules/

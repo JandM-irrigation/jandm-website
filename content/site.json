@@ -1,12 +1,11 @@
 {
   "phone": "303-549-0712",
   "hours": "Mon–Sat, 7am–5pm",
-  "availability_badge": "Open Mon–Sat, 7am–5pm · Call or text",
   "google_review_url": "https://share.google/wZBxg74LB6f4F7rDb",
   "ghl_webhook_url": "",
   "banners": [
     {
-      "text": "Freeze season is coming. Book your sprinkler blowout now. New J&M installs get their first blowout free.",
+      "text": "Freeze season is coming. Book your sprinkler blowout now.",
       "button_text": "Book a Blowout",
       "button_link": "sprinkler-blowouts.html",
       "start": "09-01",
@@ -32,43 +31,6 @@
       "button_link": "sprinkler-repair.html",
       "start": "05-16",
       "end": "08-31"
-    }
-  ],
-  "services": [
-    {
-      "name": "Sprinkler System Installation",
-      "link": "sprinkler-installation.html",
-      "summary": "A new system zoned for your yard's sun, shade and slopes. Free estimate, 1-year warranty, and your first blowout free.",
-      "photo": "images/work/install-trench.webp",
-      "photo_alt": "Freshly dug irrigation trench with new line along a ranch fence"
-    },
-    {
-      "name": "Sprinkler Repair",
-      "link": "sprinkler-repair.html",
-      "summary": "Dry spots, leaks, broken heads or a zone that won't shut off. We find the real cause and fix it once. $75 diagnostic, waived when we do the repair.",
-      "photo": "images/work/repair-split-pipe.webp",
-      "photo_alt": "Split irrigation line spraying water in a dug-out hole in a lawn"
-    },
-    {
-      "name": "Sprinkler Blowouts",
-      "link": "sprinkler-blowouts.html",
-      "summary": "We clear every zone with compressed air before the first hard freeze, so your pipes and backflow make it through winter.",
-      "photo": "https://images.pexels.com/photos/14796777/pexels-photo-14796777.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1100&h=1100",
-      "photo_alt": "Frost-covered grass blades on a freezing morning"
-    },
-    {
-      "name": "Spring Start-Ups",
-      "link": "spring-start-up.html",
-      "summary": "We turn the water back on slowly, run every zone, adjust heads and fix what winter broke.",
-      "photo": "images/work/heads-rock-border.webp",
-      "photo_alt": "Row of sprinkler heads running along a lawn beside a rock border"
-    },
-    {
-      "name": "Sod Installation",
-      "link": "sod-installation.html",
-      "summary": "Fresh sod on properly graded soil, with your sprinklers set for new-lawn watering from day one.",
-      "photo": "https://images.pexels.com/photos/5231236/pexels-photo-5231236.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1100&h=1100",
-      "photo_alt": "Worker rolling out fresh sod over prepared soil"
     }
   ],
   "reviews": [
