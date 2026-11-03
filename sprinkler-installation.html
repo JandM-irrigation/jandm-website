@@ -20,7 +20,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="/images/brand/jm-favicon-48.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;display=swap">
-<link rel="stylesheet" href="/assets/jm.css?v=d29ae3f31b">
+<link rel="stylesheet" href="/assets/jm.css?v=bea321abff">
+<script>document.documentElement.classList.add("js");setTimeout(function(){document.documentElement.classList.add("reveal-all")},3000);</script>
 <script>
 /* Google Analytics loads only on the production host, so previews and test copies send nothing. */
 if (location.hostname === "jmirrigationco.com") {
@@ -36,7 +37,7 @@ if (location.hostname === "jmirrigationco.com") {
 <body data-page-type="service">
 <a class="skip" href="#main">Skip to content</a>
 
-<div class="banner" data-banner role="region" aria-label="Seasonal announcement" hidden><p class="wrap"><span data-banner-text></span> <a data-banner-link href="/contact.html#quote"></a></p></div>
+<div class="banner" data-banner role="region" aria-label="Seasonal announcement"><p class="wrap banner__inner"><span class="banner__text" data-banner-text>Freeze season is coming. Book your sprinkler blowout now.</span> <a class="banner__cta" data-banner-link data-placement="banner" href="/sprinkler-blowouts.html">Book a Blowout</a></p></div>
 <header class="masthead">
 <div class="wrap masthead__inner">
 <a class="masthead__brand" href="/"><img class="logo" src="/images/brand/jm-official-logo-168.webp" srcset="/images/brand/jm-official-logo-168.webp 1x, /images/brand/jm-official-logo-336.webp 2x" width="168" height="182" alt="J&amp;M Irrigation Services — Do it right the first time."></a>
@@ -56,13 +57,13 @@ if (location.hostname === "jmirrigationco.com") {
 </header>
 <nav class="crumbs wrap" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><a href="/services.html">Services</a></li><li><span aria-current="page">Sprinkler installation</span></li></ol></nav>
 <main id="main">
-<section class="hero">
+<section class="hero hero--service">
 <div class="wrap grid-12 hero__grid">
 <div class="hero__text">
 
 <h1>Sprinkler System Installation in Denver, CO</h1>
 <p class="lead">New systems planned for your yard, your soil and Colorado's weather.</p>
-<div class="actions"><a class="btn btn--primary" href="/contact.html#quote" data-placement="hero">Request a quote</a><a class="btn btn--secondary" href="tel:+13035490712" data-placement="hero" data-phone-link>Call 303-549-0712</a></div>
+<div class="actions"><a class="btn btn--accent" href="/contact.html#quote" data-placement="hero">Request a quote</a><a class="btn btn--secondary" href="tel:+13035490712" data-placement="hero" data-phone-link>Call 303-549-0712</a></div>
 </div>
 <figure class="hero__media"><img class="hero__img" src="/images/work/install-trench.webp" sizes="(min-width: 1024px) 55vw, 100vw" width="1100" height="1100" alt="Freshly dug irrigation trench with new line along a ranch fence" loading="eager" fetchpriority="high"></figure>
 </div>
@@ -87,7 +88,35 @@ if (location.hostname === "jmirrigationco.com") {
 <section class="section section--pale" aria-labelledby="process-title">
 <div class="wrap">
 <h2 id="process-title">How the work goes</h2>
-<ol class="process"><li><h3>Walkthrough and estimate</h3><p>We look at the yard with you and give you an estimate.</p></li><li><h3>Zone plan</h3><p>Zones are laid out for sun, shade and slopes, and we explain the components and controller before work begins.</p></li><li><h3>Installation</h3><p>Trenching, pipe, valves and sprinkler heads.</p></li><li><h3>Controller setup</h3><p>The controller is set up and programmed for your zones.</p></li><li><h3>Final test</h3><p>Every zone is run and checked before we leave.</p></li></ol>
+<ol class="process"><li data-reveal style="--i:0"><h3>Walkthrough and estimate</h3><p>We look at the yard with you and give you an estimate.</p></li><li data-reveal style="--i:1"><h3>Zone plan</h3><p>Zones are laid out for sun, shade and slopes, and we explain the components and controller before work begins.</p></li><li data-reveal style="--i:2"><h3>Installation</h3><p>Trenching, pipe, valves and sprinkler heads.</p></li><li data-reveal style="--i:3"><h3>Controller setup</h3><p>The controller is set up and programmed for your zones.</p></li><li data-reveal style="--i:4"><h3>Final test</h3><p>Every zone is run and checked before we leave.</p></li></ol>
+</div>
+</section>
+
+<section class="section proof proof--2" aria-labelledby="proof-title">
+<div class="wrap">
+<div class="section-head">
+<h2 id="proof-title">Before and after</h2>
+<p>Real J&amp;M jobs, photographed before and after. Drag the handle, or use the arrow keys, to compare.</p>
+</div>
+<div class="proof__grid"><figure class="ba">
+<div class="compare" data-compare style="--pos:50%">
+<img class="ba-img" src="/images/work/street-after.webp" sizes="(min-width: 768px) 45vw, 100vw" width="900" height="1200" alt="After: Lawn strip restored after the new sprinkler line went in" loading="lazy" decoding="async">
+<div class="ba-before"><img class="ba-img" src="/images/work/street-before.webp" sizes="(min-width: 768px) 45vw, 100vw" width="900" height="1200" alt="Before: Crew laying new PVC sprinkler line in an open trench" loading="lazy" decoding="async"></div>
+<span class="ba-tag ba-tag--before" aria-hidden="true">Before</span><span class="ba-tag ba-tag--after" aria-hidden="true">After</span>
+<span class="ba-handle" aria-hidden="true"><span></span></span>
+<input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Compare before and after: Street-side sprinkler line" aria-valuetext="Half before, half after">
+</div>
+<figcaption>Street-side sprinkler line</figcaption>
+</figure><figure class="ba">
+<div class="compare" data-compare style="--pos:50%">
+<img class="ba-img" src="/images/work/patio-after.webp" sizes="(min-width: 768px) 45vw, 100vw" width="900" height="1200" alt="After: Finished backyard with planting bed, rock and lawn with sprinklers running" loading="lazy" decoding="async">
+<div class="ba-before"><img class="ba-img" src="/images/work/patio-before.webp" sizes="(min-width: 768px) 45vw, 100vw" width="900" height="1200" alt="Before: Bare dirt around a new patio" loading="lazy" decoding="async"></div>
+<span class="ba-tag ba-tag--before" aria-hidden="true">Before</span><span class="ba-tag ba-tag--after" aria-hidden="true">After</span>
+<span class="ba-handle" aria-hidden="true"><span></span></span>
+<input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Compare before and after: Backyard lawn, planting bed and rock" aria-valuetext="Half before, half after">
+</div>
+<figcaption>Backyard lawn, planting bed and rock</figcaption>
+</figure></div>
 </div>
 </section>
 
@@ -100,7 +129,7 @@ if (location.hostname === "jmirrigationco.com") {
 </div>
 </section>
 
-<section class="section section--pale" id="quote" aria-labelledby="quote-title">
+<section class="section section--forest" id="quote" aria-labelledby="quote-title">
 <div class="wrap grid-12 quote">
 <div class="quote__intro">
 <h2 id="quote-title">Request a quote for sprinkler installation.</h2>
@@ -182,6 +211,6 @@ if (location.hostname === "jmirrigationco.com") {
 <a class="actionbar__call" href="tel:+13035490712" data-phone-link data-placement="bottom-bar">Call</a>
 <a class="actionbar__quote" href="/contact.html#quote" data-placement="bottom-bar">Request a quote</a>
 </div>
-<script src="/js/main.js?v=9bada30df6" defer></script>
+<script src="/js/main.js?v=de14a81a10" defer></script>
 </body>
 </html>

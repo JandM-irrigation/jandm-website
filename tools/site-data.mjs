@@ -30,6 +30,30 @@ export const WORK = {
   heads: { src: "/images/work/heads-rock-border.webp", w: 1100, h: 1100, alt: "Row of sprinkler heads running along a lawn beside a rock border" },
   sod: { src: "/images/work/sod-after-2.webp", w: 900, h: 1200, alt: "Side yard with an established green lawn and gravel border after new sod" },
   pines: { src: "/images/work/pines-fence.webp", w: 1400, h: 933, alt: "Pine trees and a ranch fence on a lawn J&M waters, with sprinklers running" },
+  shed: { src: "/images/work/lawn-shed.webp", w: 1100, h: 1100, alt: "Sprinklers watering a wide lawn with pine trees and a shed" },
+  zones: { src: "/images/work/zones-pines.webp", w: 1100, h: 1100, alt: "Sprinkler zones running across a lawn between pine trees" },
+  patio: { src: "/images/work/patio-after.webp", w: 900, h: 1200, alt: "Finished backyard with planting bed, rock and lawn with sprinklers running" },
+  street: { src: "/images/work/street-after.webp", w: 900, h: 1200, alt: "Lawn strip restored after a new sprinkler line went in" },
+};
+
+// Authentic before/after pairs from the original J&M site: each pair is the same property, same
+// angle. Alt text and captions are the original site's wording.
+export const BEFORE_AFTER = {
+  patio: {
+    caption: "Backyard lawn, planting bed and rock",
+    before: { src: "/images/work/patio-before.webp", alt: "Before: Bare dirt around a new patio" },
+    after: { src: "/images/work/patio-after.webp", alt: "After: Finished backyard with planting bed, rock and lawn with sprinklers running" },
+  },
+  street: {
+    caption: "Street-side sprinkler line",
+    before: { src: "/images/work/street-before.webp", alt: "Before: Crew laying new PVC sprinkler line in an open trench" },
+    after: { src: "/images/work/street-after.webp", alt: "After: Lawn strip restored after the new sprinkler line went in" },
+  },
+  sod: {
+    caption: "Bare dirt to new sod",
+    before: { src: "/images/work/sod-before.webp", alt: "Before: Bare dirt side yard before sod" },
+    after: { src: "/images/work/sod-after-2.webp", alt: "After: Same side yard with an established green lawn and gravel border" },
+  },
 };
 
 // The five retained services, in the brief's order. `value` keeps the existing form values so

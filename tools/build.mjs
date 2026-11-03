@@ -16,7 +16,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
-  SITE, BUSINESS_ID, EMAIL, FACTS, FACTS_CONFIRMED, LOGO_ALT, WORK, SERVICES, NOT_SURE, CITIES,
+  SITE, BUSINESS_ID, EMAIL, FACTS, FACTS_CONFIRMED, LOGO_ALT, WORK, BEFORE_AFTER, SERVICES, NOT_SURE, CITIES,
 } from "./site-data.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -27,6 +27,11 @@ const PHONE = content.phone || "303-549-0712";
 const HOURS = content.hours || "Mon–Sat, 7am–5pm";
 const TEL = "tel:+1" + PHONE.replace(/\D/g, "").slice(-10);
 const SMS = TEL.replace("tel:", "sms:");
+const BANNER = (() => {
+  const [m, d] = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", month: "numeric", day: "numeric" }).format(new Date()).split("/").map(Number);
+  const t = m * 100 + d, md = (x) => { const [a, b] = String(x || "").split("-").map(Number); return a * 100 + b; };
+  return (content.banners || []).find((b) => { const a = md(b.start), z = md(b.end); return b.text && a && z && (a <= z ? t >= a && t <= z : t >= a || t <= z); }) || null;
+})();
 const REVIEW_URL = /^https:\/\//.test(content.google_review_url || "") ? content.google_review_url : "";
 
 // Unconfirmed business facts show only in the local review build until the owner confirms them.
@@ -58,6 +63,45 @@ function workImg(key, { eager = false, cls = "", sizes = "(min-width: 1024px) 55
   const p = WORK[key];
   const load = eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
   return `<img class="${cls}" src="${p.src}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" ${load}>`;
+}
+
+// A real J&M job photo for each service card and service page hero.
+const SERVICE_PHOTO = { repair: "repair", install: "install", blowouts: "freeze", startup: "heads", sod: "sod" };
+
+// Before/after comparison: the after photo underneath, the before photo clipped on top. The range
+// input gives keyboard control; pointer dragging (mouse and touch) is handled in js/main.js.
+function compareSlider(key, { sizes = "(min-width: 1024px) 33vw, 100vw" } = {}) {
+  const p = BEFORE_AFTER[key];
+  const img = (x) => `<img class="ba-img" src="${x.src}" sizes="${sizes}" width="900" height="1200" alt="${esc(x.alt)}" loading="lazy" decoding="async">`;
+  return `<figure class="ba">
+<div class="compare" data-compare style="--pos:50%">
+${img(p.after)}
+<div class="ba-before">${img(p.before)}</div>
+<span class="ba-tag ba-tag--before" aria-hidden="true">Before</span><span class="ba-tag ba-tag--after" aria-hidden="true">After</span>
+<span class="ba-handle" aria-hidden="true"><span></span></span>
+<input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Compare before and after: ${esc(p.caption)}" aria-valuetext="Half before, half after">
+</div>
+<figcaption>${esc(p.caption)}</figcaption>
+</figure>`;
+}
+
+// Image-led service cards (home, services hub and city pages).
+function serviceCards(items = SERVICES, { cityName = "", headingLevel = 3 } = {}) {
+  return `<ul class="cards cards--${items.length}">${items.map((s, i) => `<li class="card" data-reveal style="--i:${i}">
+<a class="card__link" href="${s.path}">
+<span class="card__media">${workImg(SERVICE_PHOTO[s.key], { cls: "card__img", sizes: i < 2 ? "(min-width: 1024px) 45vw, 100vw" : "(min-width: 1024px) 30vw, 100vw" })}</span>
+<span class="card__body">
+<h${headingLevel} class="card__name">${esc(s.rowName || s.name)}${cityName ? `<span class="visually-hidden"> in ${esc(cityName)}</span>` : ""}</h${headingLevel}>
+<span class="card__text">${esc(s.rowSummary || s.summary)}</span>
+<span class="card__go">See details ${ARROW}</span>
+</span>
+</a>
+</li>`).join("")}</ul>`;
+}
+
+// A short strip of real job photos.
+function photoStrip(keys, label) {
+  return `<ul class="strip" aria-label="${esc(label)}">${keys.map((k, i) => `<li class="strip__item" data-reveal="image" style="--i:${i}">${workImg(k, { cls: "strip__img", sizes: "(min-width: 768px) 33vw, 100vw" })}</li>`).join("")}</ul>`;
 }
 
 const btn = (href, label, { variant = "primary", placement = "", attrs = "" } = {}) =>
@@ -107,7 +151,7 @@ ${SHOW_FACTS ? `<p class="price-note" data-price-note data-note-repair="${esc(FA
 }
 
 function quoteBlock({ heading = "Tell us what your property needs.", copy = "Choose a service and leave your name and phone number. J&M will get back to you about the next step.", selected = "", id = "quote", button = "Request a quote" } = {}) {
-  return `<section class="section section--pale" id="${id}" aria-labelledby="${id}-title">
+  return `<section class="section section--forest" id="${id}" aria-labelledby="${id}-title">
 <div class="wrap grid-12 quote">
 <div class="quote__intro">
 <h2 id="${id}-title">${heading}</h2>
@@ -299,13 +343,14 @@ ${page.path ? `<meta property="og:url" content="${abs(page.path)}">` : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;display=swap">
 <link rel="stylesheet" href="/assets/jm.css?v=${CSS_V}">
+<script>document.documentElement.classList.add("js");setTimeout(function(){document.documentElement.classList.add("reveal-all")},3000);</script>
 ${PREVIEW ? "" : ANALYTICS}
 ${page.path ? `<script type="application/ld+json">${schemaFor(page)}</script>` : ""}
 </head>
 <body data-page-type="${page.type}">
 <a class="skip" href="#main">Skip to content</a>
 ${PREVIEW ? `<p class="preview-flag">${featured ? featured.previewNote : "Local review build. Not published."}</p>` : ""}
-<div class="banner" data-banner role="region" aria-label="Seasonal announcement" hidden><p class="wrap"><span data-banner-text></span> <a data-banner-link href="/contact.html#quote"></a></p></div>
+<div class="banner" data-banner role="region" aria-label="Seasonal announcement"${BANNER ? "" : " hidden"}><p class="wrap banner__inner"><span class="banner__text" data-banner-text>${esc(BANNER?.text || "")}</span> <a class="banner__cta" data-banner-link data-placement="banner" href="${BANNER?.button_link ? "/" + esc(String(BANNER.button_link).replace(/^\//, "")) : "/contact.html#quote"}">${esc(BANNER?.button_text || "Learn more")}</a></p></div>
 ${header(page.navCurrent || page.path)}
 ${breadcrumbs(page.crumbs)}
 <main id="main">
@@ -319,17 +364,6 @@ ${footer()}
 }
 
 /* ---------- reusable sections ---------- */
-function serviceRows(items = SERVICES, { cityName = "", headingLevel = 3 } = {}) {
-  return `<ol class="rows">${items.map((s, i) => `<li class="row">
-<a class="row__link" href="${s.path}">
-<span class="row__num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
-<h${headingLevel} class="row__name">${esc(s.rowName || s.name)}${cityName ? `<span class="visually-hidden"> in ${esc(cityName)}</span>` : ""}</h${headingLevel}>
-<p class="row__text">${esc(s.rowSummary || s.summary)}</p>
-<span class="row__go">${ARROW}<span class="visually-hidden">See details</span></span>
-</a>
-</li>`).join("")}</ol>`;
-}
-
 function faqList(faqs) {
   return `<div class="faq">${faqs.map(([q, a]) => `<details class="faq__item"><summary>${esc(q)}</summary><div class="faq__body"><p>${a}</p></div></details>`).join("")}</div>`;
 }
@@ -342,14 +376,14 @@ function steps() {
 </ol>`;
 }
 
-function pageHero({ eyebrow = "", h1, lead, image, actions = true, selected = "" }) {
-  return `<section class="hero${image ? "" : " hero--text"}">
+function pageHero({ eyebrow = "", h1, lead, image, actions = true, selected = "", variant = "" }) {
+  return `<section class="hero${image ? "" : " hero--text"}${variant ? ` hero--${variant}` : ""}">
 <div class="wrap grid-12 hero__grid">
 <div class="hero__text">
 ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ""}
 <h1>${h1}</h1>
 <p class="lead">${lead}</p>
-${actions ? `<div class="actions">${btn("/contact.html#quote", "Request a quote", { placement: "hero" })}${callBtn("hero")}</div>` : ""}
+${actions ? `<div class="actions">${btn("/contact.html#quote", "Request a quote", { variant: "accent", placement: "hero" })}${callBtn("hero")}</div>` : ""}
 </div>
 ${image ? `<figure class="hero__media">${image}</figure>` : ""}
 </div>
@@ -383,27 +417,51 @@ const pages = [];
   ];
   const heroImage = featured
     ? featured.homeHero()
-    : workImg("hero", { eager: true, cls: "hero__img hero__img--crew", sizes: "(min-width: 1024px) 56vw, 100vw" });
+    : workImg("hero", { eager: true, cls: "hero__img hero__img--crew", sizes: "(min-width: 1024px) 50vw, 100vw" });
   const body = `<section class="hero hero--home">
-<div class="wrap">
-<p class="availability">Denver &amp; the Front Range · Hablamos español. <span class="availability__hours"><span data-hours>${esc(HOURS)}</span></span></p>
-</div>
 <div class="wrap grid-12 hero__grid">
 <div class="hero__text">
-<p class="eyebrow">J&amp;M Irrigation Services</p>
+<p class="availability">Denver &amp; the Front Range · Hablamos español · <span class="availability__hours"><span data-hours>${esc(HOURS)}</span></span></p>
 <h1>Sprinkler Repair &amp; Installation in Denver, CO</h1>
 <p class="lead">Sprinkler installation, repairs, seasonal care and sod installation across Denver and the Front Range. Tell us what your property needs.</p>
-<div class="actions">${btn("/contact.html#quote", "Request a quote", { placement: "hero" })}${callBtn("hero")}</div>
+<div class="actions">${btn("/contact.html#quote", "Request a quote", { variant: "accent", placement: "hero" })}${callBtn("hero", "ghost")}</div>
 <p class="support">English or Spanish. Call or text.</p>
 </div>
-<figure class="hero__media hero__media--offset">${heroImage}</figure>
+<div class="hero__media">
+<figure class="hero__main">${heroImage}</figure>
+<figure class="hero__inset">${workImg("zones", { cls: "hero__inset-img", sizes: "(min-width: 1024px) 18vw, 40vw" })}</figure>
+</div>
 </div>
 </section>
 
-<section class="section" aria-labelledby="services-title">
+<section class="section proof" aria-labelledby="proof-title">
 <div class="wrap">
+<div class="section-head">
+<h2 id="proof-title">See the difference.</h2>
+<p>Real J&amp;M jobs, photographed before and after. Drag the handle, or use the arrow keys, to compare.</p>
+</div>
+<div class="proof__grid">${["patio", "street", "sod"].map((k) => compareSlider(k)).join("")}</div>
+</div>
+</section>
+
+<section class="section section--pale" aria-labelledby="services-title">
+<div class="wrap">
+<div class="section-head section-head--split">
 <h2 id="services-title">What does your property need?</h2>
-${serviceRows()}
+<a class="text-link" href="/services.html">All services ${ARROW}</a>
+</div>
+${serviceCards()}
+</div>
+</section>
+
+<section class="season" aria-labelledby="season-title">
+<div class="wrap grid-12 season__grid">
+<div class="season__text" data-reveal>
+<h2 id="season-title">Seasonal care for Front Range systems.</h2>
+<p>Water left in sprinkler lines expands when it freezes. On the Front Range, a single cold night can crack pipes, valves and backflow devices. In spring, a careful start-up catches problems before they waste water.</p>
+<div class="actions">${btn(svc("blowouts").path, "Book a blowout", { variant: "accent", placement: "season" })}${btn(svc("startup").path, "Spring start-ups", { variant: "ghost", placement: "season" })}</div>
+</div>
+<figure class="season__media" data-reveal="image">${workImg("shed", { cls: "season__img", sizes: "(min-width: 1024px) 50vw, 100vw" })}</figure>
 </div>
 </section>
 
@@ -411,16 +469,21 @@ ${featured ? featured.homeFeature() : ""}
 
 <section class="section" aria-labelledby="people-title">
 <div class="wrap grid-12 people">
-<div class="people__intro">
+<div class="people__intro" data-reveal>
 <h2 id="people-title">Do it right the first time.</h2>
 <p>Juan's approach is straightforward: understand the problem, explain the work and check the system before leaving. J&amp;M helps homeowners with sprinkler systems, seasonal service and new sod.</p>
 <a class="text-link" href="/about.html">Meet J&amp;M ${ARROW}</a>
-</div>
 <div class="people__steps">${steps()}</div>
+</div>
+<div class="mosaic" aria-label="J&amp;M job photos" role="group">
+<figure class="mosaic__a" data-reveal="image">${workImg("pines", { cls: "mosaic__img", sizes: "(min-width: 1024px) 45vw, 100vw" })}</figure>
+<figure class="mosaic__b" data-reveal="image" style="--i:1">${workImg("patio", { cls: "mosaic__img", sizes: "(min-width: 1024px) 22vw, 50vw" })}</figure>
+<figure class="mosaic__c" data-reveal="image" style="--i:2">${workImg("street", { cls: "mosaic__img", sizes: "(min-width: 1024px) 22vw, 50vw" })}</figure>
+</div>
 </div>
 </section>
 
-${reviews.length ? `<section class="section section--pale" aria-labelledby="reviews-title">
+${reviews.length ? `<section class="section section--forest reviews" aria-labelledby="reviews-title">
 <div class="wrap">
 <h2 id="reviews-title">From J&amp;M customers.</h2>
 <div class="quotes" data-reviews>${reviews.map((r) => `<figure class="quote-col"><blockquote><p>${esc(excerpt(r.text))}</p></blockquote><figcaption>${esc(r.name)}${r.when ? `, ${esc(r.when)}` : ""} · Google review</figcaption></figure>`).join("")}</div>
@@ -439,7 +502,7 @@ ${REVIEW_URL ? `<a class="text-link" href="${REVIEW_URL}" data-review-link rel="
 </div>
 </section>
 
-<section class="section section--rule" aria-labelledby="faq-title">
+<section class="section section--pale" aria-labelledby="faq-title">
 <div class="wrap grid-12 faq-wrap">
 <h2 id="faq-title">Before you request a quote.</h2>
 ${faqList(faqs)}
@@ -458,7 +521,7 @@ ${quoteBlock()}`;
 /* Service pages */
 const SERVICE_PAGES = [
   {
-    key: "repair", file: "sprinkler-repair.html", photo: "repair",
+    key: "repair", file: "sprinkler-repair.html", photo: "repair", gallery: ["heads", "zones", "freeze"],
     title: "Sprinkler Repair in Denver, CO | J&M Irrigation",
     description: "Dry spots, leaks or a zone that won't run? J&M finds the cause, explains the price before the repair and checks the zone after. Call or text 303-549-0712.",
     h1: "Sprinkler Repair in Denver, CO",
@@ -479,7 +542,7 @@ const SERVICE_PAGES = [
     related: ["install", "startup", "blowouts"],
   },
   {
-    key: "install", file: "sprinkler-installation.html", photo: "install",
+    key: "install", file: "sprinkler-installation.html", photo: "install", proof: ["street", "patio"],
     title: "Sprinkler System Installation in Denver, CO | J&M Irrigation",
     description: "New sprinkler systems planned for your yard: walkthrough and estimate, zone planning, installation, controller setup and a full test of every zone.",
     h1: "Sprinkler System Installation in Denver, CO",
@@ -499,7 +562,7 @@ const SERVICE_PAGES = [
     related: ["sod", "repair", "blowouts"],
   },
   {
-    key: "blowouts", file: "sprinkler-blowouts.html", photo: "freeze",
+    key: "blowouts", file: "sprinkler-blowouts.html", photo: "freeze", gallery: ["repair", "heads", "zones"],
     title: "Sprinkler Blowouts & Winterization in Denver, CO | J&M Irrigation",
     description: "Clear the water from your sprinkler system before freezing weather. J&M blowouts across Denver and the Front Range. Call or text 303-549-0712.",
     h1: "Sprinkler Blowouts &amp; Winterization in Denver, CO",
@@ -519,7 +582,7 @@ const SERVICE_PAGES = [
     related: ["startup", "repair", "install"],
   },
   {
-    key: "startup", file: "spring-start-up.html", photo: "heads",
+    key: "startup", file: "spring-start-up.html", photo: "heads", gallery: ["zones", "shed", "pines"],
     title: "Spring Sprinkler Start-Ups in Denver, CO | J&M Irrigation",
     description: "J&M turns your sprinkler system back on, checks the backflow, runs every zone and adjusts heads for the season. Repairs are priced before any work.",
     h1: "Spring Sprinkler Start-Ups in Denver, CO",
@@ -538,7 +601,7 @@ const SERVICE_PAGES = [
     related: ["repair", "blowouts", "install"],
   },
   {
-    key: "sod", file: "sod-installation.html", photo: "sod",
+    key: "sod", file: "sod-installation.html", photo: "sod", proof: ["sod"], gallery: ["shed", "pines"],
     title: "Sod Installation in Denver, CO | J&M Irrigation",
     description: "Site assessment, soil and grading prep, fresh sod and sprinklers set for new-lawn watering, with a watering handoff. J&M Irrigation, Denver and the Front Range.",
     h1: "Sod Installation in Denver, CO",
@@ -565,7 +628,17 @@ for (const sp of SERVICE_PAGES) {
   const crumbs = [{ name: "Home", path: "/" }, { name: "Services", path: "/services.html" }, { name: s.name, path: pathName }];
   const projectRef = featured ? featured.serviceRef(sp.key) : "";
   const projectLink = featured ? featured.relatedLink(sp.key) : null;
-  const body = `${pageHero({ eyebrow: "", h1: sp.h1, lead: sp.lead, image: workImg(sp.photo, { eager: true, cls: "hero__img" }) })}
+  const proof = sp.proof ? `<section class="section proof proof--${sp.proof.length}" aria-labelledby="proof-title">
+<div class="wrap">
+<div class="section-head">
+<h2 id="proof-title">Before and after</h2>
+<p>Real J&amp;M jobs, photographed before and after. Drag the handle, or use the arrow keys, to compare.</p>
+</div>
+<div class="proof__grid">${sp.proof.map((k) => compareSlider(k, { sizes: sp.proof.length > 1 ? "(min-width: 768px) 45vw, 100vw" : "(min-width: 768px) 50vw, 100vw" })).join("")}</div>
+</div>
+</section>` : "";
+  const gallery = sp.gallery && !sp.proof ? `<section class="section section--tight" aria-label="J&amp;M job photos"><div class="wrap">${photoStrip(sp.gallery, "J&M job photos")}</div></section>` : "";
+  const body = `${pageHero({ eyebrow: "", h1: sp.h1, lead: sp.lead, image: workImg(sp.photo, { eager: true, cls: "hero__img" }), variant: "service" })}
 
 <section class="section" aria-labelledby="about-service">
 <div class="wrap grid-12 split">
@@ -586,9 +659,11 @@ ${sp.pricing ? `<h3>Pricing and terms</h3><p>${sp.pricing}</p>` : ""}
 <section class="section section--pale" aria-labelledby="process-title">
 <div class="wrap">
 <h2 id="process-title">How the work goes</h2>
-<ol class="process">${sp.process.map(([t, d]) => `<li><h3>${t}</h3><p>${d}</p></li>`).join("")}</ol>
+<ol class="process">${sp.process.map(([t, d], i) => `<li data-reveal style="--i:${i}"><h3>${t}</h3><p>${d}</p></li>`).join("")}</ol>
 </div>
 </section>
+
+${proof}${gallery}
 
 ${projectRef}
 
@@ -693,7 +768,7 @@ for (const c of CITIES) {
 <section class="section" aria-labelledby="city-services">
 <div class="wrap">
 <h2 id="city-services">${c.key === "colorado-springs" ? "Larger projects in Colorado Springs" : `Services in ${esc(c.name)}`}</h2>
-${serviceRows(cp.services || SERVICES, { cityName: c.name })}
+${serviceCards(cp.services || SERVICES, { cityName: c.name })}
 <p class="note">${cp.note}</p>
 </div>
 </section>
@@ -728,7 +803,7 @@ pages.push({
 <section class="section" aria-labelledby="services-title">
 <div class="wrap">
 <h2 id="services-title">Five services</h2>
-${serviceRows()}
+${serviceCards()}
 </div>
 </section>
 <section class="section section--pale" aria-labelledby="terms-title">

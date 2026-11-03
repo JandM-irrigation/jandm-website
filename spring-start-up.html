@@ -20,7 +20,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="/images/brand/jm-favicon-48.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;display=swap">
-<link rel="stylesheet" href="/assets/jm.css?v=d29ae3f31b">
+<link rel="stylesheet" href="/assets/jm.css?v=bea321abff">
+<script>document.documentElement.classList.add("js");setTimeout(function(){document.documentElement.classList.add("reveal-all")},3000);</script>
 <script>
 /* Google Analytics loads only on the production host, so previews and test copies send nothing. */
 if (location.hostname === "jmirrigationco.com") {
@@ -36,7 +37,7 @@ if (location.hostname === "jmirrigationco.com") {
 <body data-page-type="service">
 <a class="skip" href="#main">Skip to content</a>
 
-<div class="banner" data-banner role="region" aria-label="Seasonal announcement" hidden><p class="wrap"><span data-banner-text></span> <a data-banner-link href="/contact.html#quote"></a></p></div>
+<div class="banner" data-banner role="region" aria-label="Seasonal announcement"><p class="wrap banner__inner"><span class="banner__text" data-banner-text>Freeze season is coming. Book your sprinkler blowout now.</span> <a class="banner__cta" data-banner-link data-placement="banner" href="/sprinkler-blowouts.html">Book a Blowout</a></p></div>
 <header class="masthead">
 <div class="wrap masthead__inner">
 <a class="masthead__brand" href="/"><img class="logo" src="/images/brand/jm-official-logo-168.webp" srcset="/images/brand/jm-official-logo-168.webp 1x, /images/brand/jm-official-logo-336.webp 2x" width="168" height="182" alt="J&amp;M Irrigation Services — Do it right the first time."></a>
@@ -56,13 +57,13 @@ if (location.hostname === "jmirrigationco.com") {
 </header>
 <nav class="crumbs wrap" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><a href="/services.html">Services</a></li><li><span aria-current="page">Spring start-ups</span></li></ol></nav>
 <main id="main">
-<section class="hero">
+<section class="hero hero--service">
 <div class="wrap grid-12 hero__grid">
 <div class="hero__text">
 
 <h1>Spring Sprinkler Start-Ups in Denver, CO</h1>
 <p class="lead">We turn your system back on, check every zone and adjust it for the new season.</p>
-<div class="actions"><a class="btn btn--primary" href="/contact.html#quote" data-placement="hero">Request a quote</a><a class="btn btn--secondary" href="tel:+13035490712" data-placement="hero" data-phone-link>Call 303-549-0712</a></div>
+<div class="actions"><a class="btn btn--accent" href="/contact.html#quote" data-placement="hero">Request a quote</a><a class="btn btn--secondary" href="tel:+13035490712" data-placement="hero" data-phone-link>Call 303-549-0712</a></div>
 </div>
 <figure class="hero__media"><img class="hero__img" src="/images/work/heads-rock-border.webp" sizes="(min-width: 1024px) 55vw, 100vw" width="1100" height="1100" alt="Row of sprinkler heads running along a lawn beside a rock border" loading="eager" fetchpriority="high"></figure>
 </div>
@@ -87,9 +88,11 @@ if (location.hostname === "jmirrigationco.com") {
 <section class="section section--pale" aria-labelledby="process-title">
 <div class="wrap">
 <h2 id="process-title">How the work goes</h2>
-<ol class="process"><li><h3>Water on slowly</h3><p>The water is turned back on slowly to protect the pipes.</p></li><li><h3>Backflow check</h3><p>We check the backflow device. This is a visual check, not a certified backflow test.</p></li><li><h3>Run every zone</h3><p>Each zone runs while we look for leaks and broken heads.</p></li><li><h3>Adjust heads</h3><p>Heads are adjusted for coverage.</p></li><li><h3>Program the controller</h3><p>Your controller is set for spring.</p></li></ol>
+<ol class="process"><li data-reveal style="--i:0"><h3>Water on slowly</h3><p>The water is turned back on slowly to protect the pipes.</p></li><li data-reveal style="--i:1"><h3>Backflow check</h3><p>We check the backflow device. This is a visual check, not a certified backflow test.</p></li><li data-reveal style="--i:2"><h3>Run every zone</h3><p>Each zone runs while we look for leaks and broken heads.</p></li><li data-reveal style="--i:3"><h3>Adjust heads</h3><p>Heads are adjusted for coverage.</p></li><li data-reveal style="--i:4"><h3>Program the controller</h3><p>Your controller is set for spring.</p></li></ol>
 </div>
 </section>
+
+<section class="section section--tight" aria-label="J&amp;M job photos"><div class="wrap"><ul class="strip" aria-label="J&amp;M job photos"><li class="strip__item" data-reveal="image" style="--i:0"><img class="strip__img" src="/images/work/zones-pines.webp" sizes="(min-width: 768px) 33vw, 100vw" width="1100" height="1100" alt="Sprinkler zones running across a lawn between pine trees" loading="lazy" decoding="async"></li><li class="strip__item" data-reveal="image" style="--i:1"><img class="strip__img" src="/images/work/lawn-shed.webp" sizes="(min-width: 768px) 33vw, 100vw" width="1100" height="1100" alt="Sprinklers watering a wide lawn with pine trees and a shed" loading="lazy" decoding="async"></li><li class="strip__item" data-reveal="image" style="--i:2"><img class="strip__img" src="/images/work/pines-fence.webp" sizes="(min-width: 768px) 33vw, 100vw" width="1400" height="933" alt="Pine trees and a ranch fence on a lawn J&amp;M waters, with sprinklers running" loading="lazy" decoding="async"></li></ul></div></section>
 
 
 
@@ -100,7 +103,7 @@ if (location.hostname === "jmirrigationco.com") {
 </div>
 </section>
 
-<section class="section section--pale" id="quote" aria-labelledby="quote-title">
+<section class="section section--forest" id="quote" aria-labelledby="quote-title">
 <div class="wrap grid-12 quote">
 <div class="quote__intro">
 <h2 id="quote-title">Request a quote for spring start-ups.</h2>
@@ -182,6 +185,6 @@ if (location.hostname === "jmirrigationco.com") {
 <a class="actionbar__call" href="tel:+13035490712" data-phone-link data-placement="bottom-bar">Call</a>
 <a class="actionbar__quote" href="/contact.html#quote" data-placement="bottom-bar">Request a quote</a>
 </div>
-<script src="/js/main.js?v=9bada30df6" defer></script>
+<script src="/js/main.js?v=de14a81a10" defer></script>
 </body>
 </html>

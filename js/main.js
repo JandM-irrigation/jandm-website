@@ -67,7 +67,7 @@
     if (bar && b) {
       bar.querySelector("[data-banner-text]").textContent = b.text;
       var link = bar.querySelector("[data-banner-link]");
-      link.textContent = (b.button_text || "Learn more") + " →";
+      link.textContent = b.button_text || "Learn more";
       link.setAttribute("href", b.button_link ? "/" + String(b.button_link).replace(/^\//, "") : "/contact.html#quote");
       bar.hidden = false;
     }
@@ -206,6 +206,66 @@
         })
         .catch(function () { finish("failed"); });
     });
+  });
+
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- scroll-entry reveals (CSS hides only under .js without reduced motion) ---------- */
+  var revealEls = document.querySelectorAll("[data-reveal]");
+  if (!reduce && "IntersectionObserver" in window) {
+    var revealer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); revealer.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    revealEls.forEach(function (el) { revealer.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add("is-in"); });
+  }
+
+  /* ---------- before/after comparisons ----------
+     The range input (visually hidden) gives keyboard control; pointer events give mouse and touch
+     dragging anywhere on the photo. touch-action: pan-y keeps vertical page scrolling on phones. */
+  document.querySelectorAll("[data-compare]").forEach(function (el, index) {
+    var input = el.querySelector("input[type=range]"), touched = false, dragging = false;
+    function set(v) {
+      v = Math.max(0, Math.min(100, Math.round(v)));
+      el.style.setProperty("--pos", v + "%");
+      input.value = v;
+      input.setAttribute("aria-valuetext", v + "% before, " + (100 - v) + "% after");
+    }
+    function fromPointer(e) { var r = el.getBoundingClientRect(); set(((e.clientX - r.left) / r.width) * 100); }
+    input.addEventListener("input", function () { touched = true; set(input.value); });
+    el.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      touched = dragging = true;
+      el.classList.add("is-dragging");
+      if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+      if (e.pointerType !== "touch") fromPointer(e); // on touch, follow the horizontal drag only
+      input.focus({ preventScroll: true });
+    });
+    el.addEventListener("pointermove", function (e) { if (dragging) fromPointer(e); });
+    function stop() { dragging = false; el.classList.remove("is-dragging"); }
+    el.addEventListener("pointerup", stop);
+    el.addEventListener("pointercancel", stop);
+
+    if (reduce || !("IntersectionObserver" in window)) return;
+    // One gentle sweep the first time it scrolls into view, so visitors see that it moves.
+    var io = new IntersectionObserver(function (entries) {
+      if (!entries[0].isIntersecting) return;
+      io.disconnect();
+      var start = null, keys = [50, 28, 72, 50], dur = 2000;
+      function step(t) {
+        if (touched) return;
+        if (start === null) start = t;
+        var p = Math.min(1, (t - start) / dur), seg = p * (keys.length - 1), i = Math.min(keys.length - 2, Math.floor(seg)), f = seg - i;
+        var ease = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+        set(keys[i] + (keys[i + 1] - keys[i]) * ease);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      setTimeout(function () { requestAnimationFrame(step); }, 300 + index * 160);
+    }, { threshold: 0.5 });
+    io.observe(el);
   });
 
   document.querySelectorAll("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
