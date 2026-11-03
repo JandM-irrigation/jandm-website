@@ -12,6 +12,7 @@ export const EMAIL = "jandm.irrigation24@gmail.com";
 
 export const FACTS = {
   diagnostic: "Repairs start with a $75 diagnostic visit. We find the problem and give you the price to fix it. If you have us do the repair, the $75 is waived.", // PENDING
+  diagnosticShort: "Repair visits start with a $75 diagnostic. It is waived if you have us do the repair.", // PENDING
   freeEstimate: "Estimates for new sprinkler systems are free.", // PENDING
   warranty: "Every new install comes with a 1-year warranty, and your first fall blowout is on us.", // PENDING
   firstBlowout: "If J&M installed your system, your first blowout is free.", // PENDING

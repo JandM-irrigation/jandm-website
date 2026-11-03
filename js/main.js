@@ -144,9 +144,8 @@
       if (!sel || !note) return;
       var slug = serviceSlug(form);
       note.hidden = !(slug === "repair" || slug === "installation");
-      note.textContent = slug === "repair"
-        ? "Repair visits start with a $75 diagnostic. It is waived if you have us do the repair."
-        : "Estimates for new sprinkler systems are free.";
+      // The wording lives on the element, which the build renders only once the facts are confirmed.
+      note.textContent = note.getAttribute(slug === "repair" ? "data-note-repair" : "data-note-installation") || "";
     }
     if (sel) { sel.addEventListener("change", syncNote); syncNote(); }
 

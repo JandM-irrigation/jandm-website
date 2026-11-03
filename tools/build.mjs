@@ -96,7 +96,7 @@ function leadForm({ name = "quote", idPrefix = "q", selected = "", extended = fa
 <input type="hidden" name="form-name" value="${name}">
 <div class="hp" aria-hidden="true"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></div>
 ${[...core, ...more].join("\n")}
-${SHOW_FACTS ? '<p class="price-note" data-price-note hidden></p>\n' : ""}<button class="btn btn--primary btn--block" type="submit">${button}</button>
+${SHOW_FACTS ? `<p class="price-note" data-price-note data-note-repair="${esc(FACTS.diagnosticShort)}" data-note-installation="${esc(FACTS.freeEstimate)}" hidden></p>\n` : ""}<button class="btn btn--primary btn--block" type="submit">${button}</button>
 <p class="lead__error" data-form-error role="alert" hidden>Your request did not go through. Please try again, or call or text <a href="${TEL}" data-phone-link data-placement="form">${esc(PHONE)}</a>.</p>
 </form>
 <div class="lead__success" data-form-success tabindex="-1" hidden>
