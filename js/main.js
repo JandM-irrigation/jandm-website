@@ -269,5 +269,48 @@
     io.observe(el);
   });
 
+  /* ---------- photo carousel (arrows, counter, thumbnails, keys; swipe is native scroll-snap) ---------- */
+  document.querySelectorAll("[data-gallery]").forEach(function (root) {
+    var track = root.querySelector("[data-gallery-track]"), slides = track.children, count = slides.length;
+    var prev = root.querySelector("[data-gallery-prev]"), next = root.querySelector("[data-gallery-next]");
+    var counter = root.querySelector("[data-gallery-counter]"), current = root.querySelector("[data-gallery-current]");
+    var thumbs = root.querySelectorAll("[data-gallery-to]"), index = 0, frame = 0;
+    if (count < 2) return;
+    [prev, next, counter, root.querySelector("[data-gallery-thumbs]")].forEach(function (el) { if (el) el.hidden = false; });
+    root.classList.add("is-ready");
+
+    function show(i) {
+      index = i;
+      current.textContent = i + 1;
+      prev.disabled = i === 0;
+      next.disabled = i === count - 1;
+      thumbs.forEach(function (t, n) { if (n === i) t.setAttribute("aria-current", "true"); else t.removeAttribute("aria-current"); });
+      [i + 1, i - 1].forEach(function (n) { var img = slides[n] && slides[n].querySelector("img"); if (img) img.loading = "eager"; }); // neighbours ready before they are shown
+    }
+    function go(i) {
+      i = Math.max(0, Math.min(count - 1, i));
+      track.scrollTo({ left: i * track.clientWidth, behavior: reduce ? "auto" : "smooth" });
+      if (reduce) show(i);
+    }
+    track.addEventListener("scroll", function () {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(function () {
+        var i = Math.round(track.scrollLeft / track.clientWidth);
+        if (i !== index) show(i);
+      });
+    }, { passive: true });
+    prev.addEventListener("click", function () { go(index - 1); });
+    next.addEventListener("click", function () { go(index + 1); });
+    thumbs.forEach(function (t) { t.addEventListener("click", function () { go(+t.getAttribute("data-gallery-to")); }); });
+    root.addEventListener("keydown", function (e) {
+      var to = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: count - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      go(to);
+    });
+    window.addEventListener("resize", function () { track.scrollTo({ left: index * track.clientWidth, behavior: "auto" }); });
+    show(0);
+  });
+
   document.querySelectorAll("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
 })();

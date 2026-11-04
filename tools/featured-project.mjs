@@ -4,9 +4,9 @@
 
 const PHOTOS = {
   terraced: { base: "ranch-terraced-lawn", widths: [640, 1280, 1920], ratio: [4, 3],
-    alt: "Terraced lawn and trees on the grounds at Spruce Mountain Ranch.", pos: "50% 60%" },
+    alt: "Terraced lawn and trees on the grounds at Spruce Mountain Ranch.", caption: "Terraced lawn and trees on the ranch grounds.", pos: "50% 60%" },
   aerial: { base: "ranch-aerial", widths: [640, 1280, 1920], dims: [1920, 1087],
-    alt: "Aerial view of fields, trees and buildings at Spruce Mountain Ranch." },
+    alt: "Aerial view of fields, trees and buildings at Spruce Mountain Ranch.", caption: "The ranch from above: fields, tree lines and buildings." },
   paddocks: { base: "ranch-turf-paddocks", widths: [640, 1280, 1920], ratio: [4, 3],
     alt: "Lawn sloping toward fenced paddocks in mist at Spruce Mountain Ranch.", caption: "Turf and paddocks across the ranch grounds.", pos: "50% 55%" },
   timber: { base: "ranch-lawn-timber-structure", widths: [640, 1280, 1920], ratio: [4, 3],
@@ -21,6 +21,7 @@ const PHOTOS = {
 const SLUG = "spruce-mountain-ranch-irrigation";
 const URL_PATH = `/projects/${SLUG}.html`;
 const DIR = "/images/projects/spruce-mountain-ranch";
+const GALLERY = ["paddocks", "terraced", "timber", "lane", "autumn", "overlook", "aerial"];
 
 export default {
   publish: true,
@@ -32,14 +33,14 @@ export default {
   setup(ctx) {
     const { esc, ARROW, svc, city, SITE, BUSINESS_ID, quoteBlock, relatedLinks } = ctx;
 
-    const picture = (key, { sizes = "100vw", eager = false, cls = "" } = {}) => {
+    const picture = (key, { sizes = "100vw", eager = false, cls = "", crop = true } = {}) => {
       const p = PHOTOS[key];
       const largest = p.widths[p.widths.length - 1];
       const [w, h] = p.dims || [largest, Math.round((largest * p.ratio[1]) / p.ratio[0])];
       const srcset = p.widths.map((x) => `${DIR}/${p.base}-${x}.webp ${x}w`).join(", ");
       const src = `${DIR}/${p.base}-${p.widths[Math.min(1, p.widths.length - 1)]}.webp`;
       const load = eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
-      const style = p.pos ? ` style="object-position:${p.pos}"` : "";
+      const style = p.pos && crop ? ` style="object-position:${p.pos}"` : "";
       return `<img class="${cls}" src="${src}" srcset="${srcset}" sizes="${sizes}" width="${w}" height="${h}" alt="${esc(p.alt)}" ${load}${style}>`;
     };
     const aerial = ({ eager = false, sizes = "(min-width: 1024px) 66vw, 100vw" } = {}) => {
@@ -70,7 +71,25 @@ ${photo ? `<figure class="project-ref__media">${picture(photo, { sizes: "(min-wi
       sod: { text: "Sod installation is part of J&amp;M's work at Spruce Mountain Ranch.", photo: "timber", caption: "Lawn beside a timber structure on the ranch grounds. A view of the property, not a photo of new sod." },
     };
 
-    const fig = (key, cls, sizes) => `<figure class="${cls}">${picture(key, { sizes })}<figcaption>${esc(PHOTOS[key].caption)}</figcaption></figure>`;
+    // One photo at a time. Without JavaScript the track still scrolls and snaps sideways, and every photo is
+    // in the HTML; js/main.js adds the arrows, counter, thumbnails and keyboard control.
+    const thumb = (key, label) => {
+      const p = PHOTOS[key], [w, h] = p.dims ? [640, Math.round((640 * p.dims[1]) / p.dims[0])] : [640, Math.round((640 * p.ratio[1]) / p.ratio[0])];
+      return `<img src="${DIR}/${p.base}-640.webp" width="${w}" height="${h}" alt="${esc(label)}" loading="lazy" decoding="async">`;
+    };
+    const gallery = () => `<div class="gallery" data-gallery role="region" aria-roledescription="carousel" aria-labelledby="photos-title">
+<div class="gallery__stage">
+<ul class="gallery__track" data-gallery-track tabindex="0" aria-label="Ranch photos. Scroll sideways or use the arrow keys.">
+${GALLERY.map((key, i) => `<li class="gallery__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${GALLERY.length}"><figure>${picture(key, { sizes: "(min-width: 1024px) 960px, 100vw", cls: "gallery__img", crop: false })}<figcaption>${esc(PHOTOS[key].caption)}</figcaption></figure></li>`).join("\n")}
+</ul>
+<button class="gallery__nav gallery__nav--prev" type="button" data-gallery-prev aria-label="Previous photo" hidden>${ARROW}</button>
+<button class="gallery__nav gallery__nav--next" type="button" data-gallery-next aria-label="Next photo" hidden>${ARROW}</button>
+</div>
+<p class="gallery__counter" data-gallery-counter aria-live="polite" hidden><span data-gallery-current>1</span> / ${GALLERY.length}</p>
+<ul class="gallery__thumbs" data-gallery-thumbs hidden>
+${GALLERY.map((key, i) => `<li><button type="button" data-gallery-to="${i}"${i ? "" : ' aria-current="true"'}>${thumb(key, `Show photo ${i + 1}: ${PHOTOS[key].caption}`)}</button></li>`).join("\n")}
+</ul>
+</div>`;
     const scopeRows = [
       ["Sprinkler installation", "Sprinkler installation is part of J&amp;M's work at the ranch.", svc("install").path],
       ["Irrigation maintenance", "J&amp;M also performs irrigation maintenance within its overall work area. This does not describe a service schedule or a contract to manage the whole property.", ""],
@@ -168,15 +187,7 @@ ${photo ? `<figure class="project-ref__media">${picture(photo, { sizes: "(min-wi
 <section class="section" aria-labelledby="photos-title">
 <div class="wrap">
 <h2 id="photos-title">Around the property</h2>
-<div class="story">
-${fig("paddocks", "story__lead", "(min-width: 1024px) 66vw, 100vw")}
-<div class="story__pair">
-${fig("timber", "", "(min-width: 768px) 50vw, 100vw")}
-${fig("lane", "", "(min-width: 768px) 50vw, 100vw")}
-</div>
-${fig("autumn", "story__read", "(min-width: 1024px) 720px, 100vw")}
-${fig("overlook", "story__wide", "(min-width: 1280px) 1184px, 100vw")}
-</div>
+${gallery()}
 </div>
 </section>
 
