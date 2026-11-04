@@ -206,7 +206,7 @@ a:hover .arrow { transform: translateX(4px); }
 .hero__text, .hero__media { min-width: 0; }
 .hero__img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
 .hero__img--crew { object-position: 50% 38%; }
-.hero__media figcaption, .project-ref__media figcaption, .story figcaption { font-size: .875rem; color: var(--muted); margin-top: 10px; }
+.hero__media figcaption, .project-ref__media figcaption, .reel figcaption { font-size: .875rem; color: var(--muted); margin-top: 10px; }
 .support { margin-top: 14px; color: var(--muted); font-size: 1rem; }
 .hero--text .hero__grid { display: block; }
 .hero--text h1 { max-width: 20ch; }
@@ -507,17 +507,33 @@ a:hover .arrow { transform: translateX(4px); }
 .facts dd { margin: 4px 0 0; font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; color: var(--forest); }
 @media (min-width: 768px) { .facts { grid-template-columns: repeat(3, 1fr); gap: var(--gap); border-top: 0; } .facts > div { border-top: 2px solid var(--forest); border-bottom: 0; } }
 .clarify { margin-top: 20px; font-size: 1.0625rem; }
-.story { display: grid; gap: 48px; }
-.story img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-.story__pair { display: grid; gap: 32px; }
-@media (min-width: 768px) { .story__pair { grid-template-columns: 1fr 1fr; gap: var(--gap); } }
-.story__read { max-width: 720px; }
-.story__wide img { aspect-ratio: 16 / 9; }
-@media (max-width: 767px) { .story__wide img { aspect-ratio: 4 / 3; } }
-@media (min-width: 1024px) {
-  .story__lead { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); align-items: end; }
-  .story__lead img { grid-column: 1 / span 8; }
-  .story__lead figcaption { grid-column: 9 / span 4; margin: 0; }
+/* Ranch photo reel: one row of photos at a shared height, each in its own proportions. Without scripting
+   it is a row the visitor scrolls sideways. With scripting (.is-moving) js/main.js moves it slowly and
+   loops it, using copies of the photos that are hidden from assistive technology. */
+.reel { --reel-h: min(52vw, 280px); margin-top: 28px; }
+@media (min-width: 768px) { .reel { --reel-h: min(34vw, 320px); } }
+@media (min-width: 1024px) { .reel { --reel-h: clamp(300px, 24vw, 380px); } }
+.reel__viewport { overflow-x: auto; overscroll-behavior-x: contain; }
+.reel__viewport:focus-visible { outline: 3px solid var(--water); outline-offset: -3px; border-radius: 0; }
+.reel__track { list-style: none; margin: 0; padding: 0 max(var(--gutter), calc((100% - 1280px) / 2)) 12px; display: flex; gap: var(--gap); width: max-content; }
+.reel__item { flex: none; }
+.reel__item figure { margin: 0; }
+.reel__item img { display: block; width: auto; height: var(--reel-h); border-radius: var(--radius); background: var(--stone); }
+.reel figcaption { width: 0; min-width: 100%; }
+.reel.is-moving .reel__viewport { overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+.reel.is-dragging .reel__viewport { cursor: grabbing; }
+.reel.is-moving .reel__track { padding: 0; will-change: transform; }
+.reel.is-moving img { -webkit-user-drag: none; }
+.reel.is-stepping .reel__track { transition: transform 450ms var(--ease-out); }
+.reel__controls { margin-top: 20px; }
+.reel__toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px; border: 2px solid var(--forest); border-radius: var(--radius); background: var(--white); color: var(--forest); font: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer; transition: background var(--t) var(--ease); }
+.reel__toggle[hidden] { display: none; }
+.reel__toggle:hover { background: var(--pale); }
+/* Two bars while moving (press to pause), a triangle while paused (press to play). */
+.reel__toggle::before { content: ""; width: 10px; height: 12px; box-sizing: border-box; border-inline: 3px solid currentColor; }
+.reel__toggle[data-paused]::before { width: 0; height: 0; border-block: 6px solid transparent; border-inline: 10px solid currentColor; border-inline-end: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .reel.is-stepping .reel__track, .reel__toggle { transition: none; }
 }
 
 /* ---------- prose (legal, 404) ---------- */
@@ -543,6 +559,11 @@ a:hover .arrow { transform: translateX(4px); }
 .footer__base p { margin: 0; }
 .footer__base ul { list-style: none; display: flex; gap: 20px; }
 .footer__base a { display: inline-flex; min-height: 44px; align-items: center; }
+/* Agency credit: the quietest line in the footer, under the copyright row. */
+.footer__credit { margin: 4px auto 0; font-size: .8125rem; color: #C3D5CB; }
+.footer__credit a { display: inline-block; padding: 4px 2px; text-decoration: underline; text-decoration-color: rgb(255 255 255 / .45); }
+.footer__credit a:hover { text-decoration-color: currentColor; }
+.footer__credit a:focus-visible { outline-offset: 1px; }
 @media (min-width: 768px) { .footer__grid { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1024px) { .footer__grid { grid-template-columns: 4fr 3fr 3fr 3fr; } }
 

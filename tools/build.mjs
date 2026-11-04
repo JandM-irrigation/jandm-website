@@ -238,6 +238,7 @@ function footer() {
 <p>© <span data-year>2026</span> J&amp;M Irrigation Services</p>
 <ul><li><a href="/about.html">About</a></li><li><a href="/privacy.html">Privacy</a></li><li><a href="/terms.html">Terms</a></li></ul>
 </div>
+<p class="wrap footer__credit">Website by <a href="https://moasolutions.net">MOA-Solutions</a></p>
 </footer>
 <div class="actionbar" role="region" aria-label="Quick contact">
 <a class="actionbar__call" href="${TEL}" data-phone-link data-placement="bottom-bar">Call</a>
