@@ -71,24 +71,22 @@ ${photo ? `<figure class="project-ref__media">${picture(photo, { sizes: "(min-wi
       sod: { text: "Sod installation is part of J&amp;M's work at Spruce Mountain Ranch.", photo: "timber", caption: "Lawn beside a timber structure on the ranch grounds. A view of the property, not a photo of new sod." },
     };
 
-    // One photo at a time. Without JavaScript the track still scrolls and snaps sideways, and every photo is
-    // in the HTML; js/main.js adds the arrows, counter, thumbnails and keyboard control.
-    const thumb = (key, label) => {
-      const p = PHOTOS[key], [w, h] = p.dims ? [640, Math.round((640 * p.dims[1]) / p.dims[0])] : [640, Math.round((640 * p.ratio[1]) / p.ratio[0])];
-      return `<img src="${DIR}/${p.base}-640.webp" width="${w}" height="${h}" alt="${esc(label)}" loading="lazy" decoding="async">`;
+    // A row of photos that moves slowly and loops (the same motion as MOA's R&R Services work carousel).
+    // Without JavaScript it is a row the visitor scrolls sideways; every photo is in the HTML once.
+    // js/main.js copies the row for the loop (copies hidden from assistive technology, same image files)
+    // and adds the motion, dragging, keyboard stepping and the pause button.
+    // Every photo keeps its own proportions at one shared height, so the size hints follow each photo's ratio.
+    const reelSizes = (key) => {
+      const p = PHOTOS[key], [w, h] = p.dims || p.ratio, r = (w / h).toFixed(3);
+      return `(min-width: 1024px) calc(clamp(300px, 24vw, 380px) * ${r}), (min-width: 768px) calc(min(34vw, 320px) * ${r}), calc(min(52vw, 280px) * ${r})`;
     };
-    const gallery = () => `<div class="gallery" data-gallery role="region" aria-roledescription="carousel" aria-labelledby="photos-title">
-<div class="gallery__stage">
-<ul class="gallery__track" data-gallery-track tabindex="0" aria-label="Ranch photos. Scroll sideways or use the arrow keys.">
-${GALLERY.map((key, i) => `<li class="gallery__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${GALLERY.length}"><figure>${picture(key, { sizes: "(min-width: 1024px) 960px, 100vw", cls: "gallery__img", crop: false })}<figcaption>${esc(PHOTOS[key].caption)}</figcaption></figure></li>`).join("\n")}
+    const gallery = () => `<div class="reel" data-reel>
+<div class="reel__viewport" data-reel-viewport tabindex="0" role="region" aria-label="Ranch photos. Use the left and right arrow keys to move through them.">
+<ul class="reel__track" data-reel-track>
+${GALLERY.map((key) => `<li class="reel__item"><figure>${picture(key, { sizes: reelSizes(key), crop: false })}<figcaption>${esc(PHOTOS[key].caption)}</figcaption></figure></li>`).join("\n")}
 </ul>
-<button class="gallery__nav gallery__nav--prev" type="button" data-gallery-prev aria-label="Previous photo" hidden>${ARROW}</button>
-<button class="gallery__nav gallery__nav--next" type="button" data-gallery-next aria-label="Next photo" hidden>${ARROW}</button>
 </div>
-<p class="gallery__counter" data-gallery-counter aria-live="polite" hidden><span data-gallery-current>1</span> / ${GALLERY.length}</p>
-<ul class="gallery__thumbs" data-gallery-thumbs hidden>
-${GALLERY.map((key, i) => `<li><button type="button" data-gallery-to="${i}"${i ? "" : ' aria-current="true"'}>${thumb(key, `Show photo ${i + 1}: ${PHOTOS[key].caption}`)}</button></li>`).join("\n")}
-</ul>
+<div class="wrap reel__controls" data-reel-controls><button class="reel__toggle" type="button" data-reel-toggle hidden>Pause photos</button></div>
 </div>`;
     const scopeRows = [
       ["Sprinkler installation", "Sprinkler installation is part of J&amp;M's work at the ranch.", svc("install").path],
@@ -187,8 +185,8 @@ ${GALLERY.map((key, i) => `<li><button type="button" data-gallery-to="${i}"${i ?
 <section class="section" aria-labelledby="photos-title">
 <div class="wrap">
 <h2 id="photos-title">Around the property</h2>
-${gallery()}
 </div>
+${gallery()}
 </section>
 
 ${quoteBlock({ heading: "Planning sprinkler or sod work?", copy: "Tell J&amp;M about your property, location and the work you have in mind. We will confirm whether the project is a fit.", button: "Discuss your project" })}

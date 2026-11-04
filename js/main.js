@@ -269,47 +269,152 @@
     io.observe(el);
   });
 
-  /* ---------- photo carousel (arrows, counter, thumbnails, keys; swipe is native scroll-snap) ---------- */
-  document.querySelectorAll("[data-gallery]").forEach(function (root) {
-    var track = root.querySelector("[data-gallery-track]"), slides = track.children, count = slides.length;
-    var prev = root.querySelector("[data-gallery-prev]"), next = root.querySelector("[data-gallery-next]");
-    var counter = root.querySelector("[data-gallery-counter]"), current = root.querySelector("[data-gallery-current]");
-    var thumbs = root.querySelectorAll("[data-gallery-to]"), index = 0, frame = 0;
-    if (count < 2) return;
-    [prev, next, counter, root.querySelector("[data-gallery-thumbs]")].forEach(function (el) { if (el) el.hidden = false; });
-    root.classList.add("is-ready");
+  /* ---------- ranch photo reel (same motion as MOA's R&R Services work carousel) ----------
+     The row moves slowly to the right and loops without a jump: the photos are copied for the loop, and
+     the copies are hidden from assistive technology and reuse the same image files. It stops while a
+     mouse rests on it, while it has keyboard focus (the arrow keys then step through it), while it is
+     dragged or swiped, while it is off screen or the tab is hidden, and for good when the visitor presses
+     Pause. With reduced motion it starts paused. */
+  document.querySelectorAll("[data-reel]").forEach(function (reel) {
+    var viewport = reel.querySelector("[data-reel-viewport]"), track = reel.querySelector("[data-reel-track]");
+    var controls = reel.querySelector("[data-reel-controls]"), toggle = reel.querySelector("[data-reel-toggle]");
+    var originals = Array.prototype.slice.call(track.children);
+    var motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    var SPEED = 30; // pixels per second
+    if (originals.length < 2 || !window.requestAnimationFrame || !("IntersectionObserver" in window) || !("ResizeObserver" in window)) return;
 
-    function show(i) {
-      index = i;
-      current.textContent = i + 1;
-      prev.disabled = i === 0;
-      next.disabled = i === count - 1;
-      thumbs.forEach(function (t, n) { if (n === i) t.setAttribute("aria-current", "true"); else t.removeAttribute("aria-current"); });
-      [i + 1, i - 1].forEach(function (n) { var img = slides[n] && slides[n].querySelector("img"); if (img) img.loading = "eager"; }); // neighbours ready before they are shown
-    }
-    function go(i) {
-      i = Math.max(0, Math.min(count - 1, i));
-      track.scrollTo({ left: i * track.clientWidth, behavior: reduce ? "auto" : "smooth" });
-      if (reduce) show(i);
-    }
-    track.addEventListener("scroll", function () {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(function () {
-        var i = Math.round(track.scrollLeft / track.clientWidth);
-        if (i !== index) show(i);
+    function addCopies() {
+      originals.forEach(function (item) {
+        var copy = item.cloneNode(true);
+        copy.setAttribute("aria-hidden", "true");
+        track.appendChild(copy);
       });
-    }, { passive: true });
-    prev.addEventListener("click", function () { go(index - 1); });
-    next.addEventListener("click", function () { go(index + 1); });
-    thumbs.forEach(function (t) { t.addEventListener("click", function () { go(+t.getAttribute("data-gallery-to")); }); });
-    root.addEventListener("keydown", function (e) {
-      var to = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: count - 1 }[e.key];
-      if (to === undefined) return;
-      e.preventDefault();
-      go(to);
+    }
+    function images(loading) {
+      track.querySelectorAll("img").forEach(function (img) { img.draggable = false; if (loading) img.loading = loading; });
+    }
+    // The left edge of the page content, so the first photo lines up with the heading.
+    function margin() {
+      return controls.getBoundingClientRect().left + parseFloat(getComputedStyle(controls).paddingLeft) - viewport.getBoundingClientRect().left;
+    }
+
+    addCopies();
+    images();
+    var loop = 0; // the width of one set of photos, gap included
+    var offset = margin(); // the track's position; kept between -loop and 0
+    var userPaused = motion.matches, hovered = false, focused = false, dragging = false, visible = false;
+    var frame = 0, last = 0, loaded = false;
+    reel.classList.add("is-moving");
+    toggle.hidden = false;
+
+    function place() {
+      if (loop) {
+        while (offset > 0) offset -= loop;
+        while (offset <= -loop) offset += loop;
+      }
+      track.style.transform = "translate3d(" + offset + "px, 0, 0)";
+    }
+    // Measured to the subpixel: a rounded loop would make the wrap jump by a pixel. Very wide screens get
+    // another set of copies so the row never shows a gap.
+    function measure() {
+      loop = track.children[originals.length].getBoundingClientRect().left - originals[0].getBoundingClientRect().left;
+      while (loop && track.getBoundingClientRect().width < loop + viewport.clientWidth) { addCopies(); images(loaded ? "eager" : ""); }
+      place();
+    }
+    function moving() { return !userPaused && !hovered && !focused && !dragging && visible && !document.hidden; }
+    function tick(now) {
+      frame = 0;
+      if (!moving()) return;
+      reel.classList.remove("is-stepping");
+      if (last) {
+        offset += (SPEED * Math.min(now - last, 64)) / 1000;
+        place();
+      }
+      last = now;
+      frame = requestAnimationFrame(tick);
+    }
+    function update() {
+      if (moving() && !frame) {
+        last = 0;
+        frame = requestAnimationFrame(tick);
+      }
+      toggle.textContent = userPaused ? "Play photos" : "Pause photos";
+      toggle.toggleAttribute("data-paused", userPaused);
+    }
+
+    toggle.addEventListener("click", function () { userPaused = !userPaused; update(); });
+    motion.addEventListener("change", function () { if (motion.matches) userPaused = true; update(); });
+    document.addEventListener("visibilitychange", update);
+    // Several changes can arrive in one batch, oldest first: only the latest says where it is now. The
+    // photos load together shortly before the row comes into view, so none appears blank while moving.
+    new IntersectionObserver(function (entries) {
+      var entry = entries[entries.length - 1];
+      if (entry.isIntersecting && !loaded) { loaded = true; images("eager"); }
+      visible = entry.intersectionRatio > 0;
+      update();
+    }, { rootMargin: "300px 0px", threshold: [0, 0.01] }).observe(reel);
+    new ResizeObserver(measure).observe(track);
+
+    viewport.addEventListener("pointerenter", function (event) { hovered = event.pointerType === "mouse"; update(); });
+    viewport.addEventListener("pointerleave", function () { hovered = false; update(); });
+    // Keyboard focus pauses it; a mouse click or tap on the row does not.
+    viewport.addEventListener("focusin", function () { focused = viewport.matches(":focus-visible"); update(); });
+    viewport.addEventListener("focusout", function () { focused = false; update(); });
+
+    // Keyboard: the arrow keys move the row by about one photo.
+    viewport.addEventListener("keydown", function (event) {
+      var dir = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+      if (!dir) return;
+      event.preventDefault();
+      focused = true;
+      update();
+      var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+      var target = offset - dir * (originals[0].getBoundingClientRect().width + gap);
+      reel.classList.toggle("is-stepping", !motion.matches && target <= 0 && target > -loop);
+      offset = target;
+      place();
     });
-    window.addEventListener("resize", function () { track.scrollTo({ left: index * track.clientWidth, behavior: "auto" }); });
-    show(0);
+
+    // Dragging and swiping. Vertical swipes stay with the browser (touch-action: pan-y). After a drag the
+    // row waits a moment before moving on.
+    var pointer = null, startX = 0, startOffset = 0, dragged = false, resume = 0;
+    viewport.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0) return;
+      pointer = event.pointerId;
+      startX = event.clientX;
+      startOffset = offset;
+      dragged = false;
+    });
+    viewport.addEventListener("pointermove", function (event) {
+      if (event.pointerId !== pointer) return;
+      var distance = event.clientX - startX;
+      if (!dragged && Math.abs(distance) < 6) return;
+      if (!dragged) {
+        dragged = true;
+        dragging = true;
+        clearTimeout(resume);
+        reel.classList.remove("is-stepping");
+        reel.classList.add("is-dragging");
+        viewport.setPointerCapture(pointer);
+      }
+      offset = startOffset + distance;
+      place();
+    });
+    function release(event) {
+      if (event.pointerId !== pointer) return;
+      pointer = null;
+      reel.classList.remove("is-dragging");
+      if (!dragged) return;
+      resume = setTimeout(function () { dragging = false; update(); }, 2500);
+    }
+    viewport.addEventListener("pointerup", release);
+    viewport.addEventListener("pointercancel", release);
+    viewport.addEventListener("dragstart", function (event) { event.preventDefault(); });
+
+    measure();
+    offset = margin();
+    place();
+    update();
   });
 
   document.querySelectorAll("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
