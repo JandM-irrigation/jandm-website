@@ -56,32 +56,37 @@ export const BEFORE_AFTER = {
   },
 };
 
-// The five retained services, in the brief's order. `value` keeps the existing form values so
+// The five retained services. Revision 3 leads with new installations; repair and seasonal care follow. `value` keeps the existing form values so
 // delivered leads read the same as before; `slug` is the analytics enum.
 export const SERVICES = [
+  { key: "install", name: "Sprinkler installation", path: "/sprinkler-installation.html", value: "New sprinkler system", slug: "installation",
+    summary: "Complete new systems for new landscapes, larger lots and acreage, planned zone by zone before any trenching starts." },
+  { key: "sod", name: "Sod installation", path: "/sod-installation.html", value: "Sod installation", slug: "sod",
+    summary: "Soil preparation, fresh sod and a watering handoff for your new lawn." },
   { key: "repair", name: "Sprinkler repair", path: "/sprinkler-repair.html", value: "Sprinkler repair", slug: "repair",
     summary: "Leaks, broken heads, uneven coverage or a zone that will not run. Get the problem checked before deciding on the repair." },
-  { key: "install", name: "Sprinkler installation", path: "/sprinkler-installation.html", value: "New sprinkler system", slug: "installation",
-    summary: "A new system planned for your yard, with zones, components and controller setup explained before work begins." },
   { key: "blowouts", name: "Sprinkler blowouts", path: "/sprinkler-blowouts.html", value: "Blowout", slug: "blowout",
     summary: "Seasonal winterization to clear water from your sprinkler system before freezing conditions." },
   { key: "startup", name: "Spring start-ups", path: "/spring-start-up.html", value: "Spring start-up", slug: "spring_startup",
     summary: "Water turned back on, zones checked and heads adjusted for the new season." },
-  { key: "sod", name: "Sod installation", path: "/sod-installation.html", value: "Sod installation", slug: "sod",
-    summary: "Soil preparation, fresh sod and a watering handoff for your new lawn." },
 ];
 export const NOT_SURE = { name: "Not sure", value: "Not sure", slug: "not_sure" };
 
+// Priority markets first (Revision 3): Castle Rock and the rest of Douglas County, then Colorado
+// Springs, then the Denver-area cities. `douglas` marks cities in Douglas County.
 export const CITIES = [
+  { key: "castle-rock", name: "Castle Rock", path: "/sprinkler-services-castle-rock.html", label: "Castle Rock", douglas: true },
+  { key: "colorado-springs", name: "Colorado Springs", path: "/sprinkler-services-colorado-springs.html", label: "Colorado Springs" },
+  { key: "parker", name: "Parker", path: "/sprinkler-services-parker.html", label: "Parker", douglas: true },
+  { key: "larkspur", name: "Larkspur", path: "/sprinkler-services-larkspur.html", label: "Larkspur", douglas: true },
   { key: "denver", name: "Denver", path: "/sprinkler-services-denver.html", label: "Denver" },
   { key: "aurora", name: "Aurora", path: "/sprinkler-services-aurora.html", label: "Aurora" },
-  { key: "commerce-city", name: "Commerce City", path: "/sprinkler-services-commerce-city.html", label: "Commerce City" },
   { key: "thornton", name: "Thornton", path: "/sprinkler-services-thornton.html", label: "Thornton" },
-  { key: "parker", name: "Parker", path: "/sprinkler-services-parker.html", label: "Parker" },
-  { key: "castle-rock", name: "Castle Rock", path: "/sprinkler-services-castle-rock.html", label: "Castle Rock" },
-  { key: "larkspur", name: "Larkspur", path: "/sprinkler-services-larkspur.html", label: "Larkspur" },
-  { key: "colorado-springs", name: "Colorado Springs", path: "/sprinkler-services-colorado-springs.html", label: "Colorado Springs: larger projects" },
+  { key: "commerce-city", name: "Commerce City", path: "/sprinkler-services-commerce-city.html", label: "Commerce City" },
 ];
+
+// Approximate project size, asked on the estimate forms to qualify larger installations.
+export const SCOPES = ["A repair or small job", "A typical home yard", "A large lot (about half an acre or more)", "Acreage or several properties", "Not sure yet"];
 
 // Featured projects (the brief's reusable showcase shape) are kept in .private/featured-project.mjs,
 // which git ignores, until the owner records publication permission. See tools/build.mjs.

@@ -16,7 +16,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
-  SITE, BUSINESS_ID, EMAIL, FACTS, FACTS_CONFIRMED, LOGO_ALT, WORK, BEFORE_AFTER, SERVICES, NOT_SURE, CITIES,
+  SITE, BUSINESS_ID, EMAIL, FACTS, FACTS_CONFIRMED, LOGO_ALT, WORK, BEFORE_AFTER, SERVICES, NOT_SURE, CITIES, SCOPES,
 } from "./site-data.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -122,16 +122,20 @@ ${input}
 </div>`;
 }
 
-function leadForm({ name = "quote", idPrefix = "q", selected = "", extended = false, button = "Request a quote" } = {}) {
+const LOCATIONS = [...CITIES.map((c) => c.name), "Elsewhere in Douglas County", "Elsewhere in El Paso County", "Somewhere else"];
+
+function leadForm({ name = "quote", idPrefix = "q", selected = "", cityName = "", extended = false, button = "Request a quote" } = {}) {
   const p = idPrefix;
+  const opts = (list, sel = "") => list.map((x) => `<option${x === sel ? " selected" : ""}>${esc(x)}</option>`).join("");
   const core = [
     field(`${p}-name`, "Full name", `<input id="${p}-name" name="full_name" type="text" autocomplete="name" required aria-describedby="${p}-name-error">`),
     field(`${p}-phone`, "Phone", `<input id="${p}-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required aria-describedby="${p}-phone-error">`),
-    field(`${p}-service`, "Service needed", `<select id="${p}-service" name="service_needed" required aria-describedby="${p}-service-error"><option value="">Choose a service</option>${serviceOptions(selected)}</select>`),
+    field(`${p}-city`, "Project location", `<select id="${p}-city" name="city" required aria-describedby="${p}-city-error"><option value="">Choose the city or area</option>${opts(LOCATIONS, cityName)}</select>`),
+    field(`${p}-service`, "Project type", `<select id="${p}-service" name="service_needed" required aria-describedby="${p}-service-error"><option value="">Choose a project type</option>${serviceOptions(selected)}</select>`),
+    field(`${p}-scope`, "Approximate size <span class=\"optional\">(optional)</span>", `<select id="${p}-scope" name="project_scope" aria-describedby="${p}-scope-error"><option value="">Choose the closest size</option>${opts(SCOPES)}</select>`),
   ];
   const more = extended ? [
     field(`${p}-email`, "Email <span class=\"optional\">(optional)</span>", `<input id="${p}-email" name="email" type="email" autocomplete="email" aria-describedby="${p}-email-error">`),
-    field(`${p}-city`, "City <span class=\"optional\">(optional)</span>", `<select id="${p}-city" name="city" aria-describedby="${p}-city-error"><option value="">Choose your city</option>${CITIES.map((c) => `<option>${esc(c.name)}</option>`).join("")}<option>Other</option></select>`),
     field(`${p}-language`, "Preferred language <span class=\"optional\">(optional)</span>", `<select id="${p}-language" name="language" aria-describedby="${p}-language-error"><option value="">No preference</option><option>English</option><option>Español</option></select>`),
     field(`${p}-message`, "Tell us more <span class=\"optional\">(optional)</span>", `<textarea id="${p}-message" name="message" rows="4" aria-describedby="${p}-message-error"></textarea>`),
   ] : [];
@@ -150,7 +154,7 @@ ${SHOW_FACTS ? `<p class="price-note" data-price-note data-note-repair="${esc(FA
 </div>`;
 }
 
-function quoteBlock({ heading = "Tell us what your property needs.", copy = "Choose a service and leave your name and phone number. J&M will get back to you about the next step.", selected = "", id = "quote", button = "Request a quote" } = {}) {
+function quoteBlock({ heading = "Tell us about your project.", copy = "Share the location, the type of project and its rough size. J&amp;M will get back to you about the next step.", selected = "", cityName = "", id = "quote", button = "Request a quote" } = {}) {
   return `<section class="section section--forest" id="${id}" aria-labelledby="${id}-title">
 <div class="wrap grid-12 quote">
 <div class="quote__intro">
@@ -163,7 +167,7 @@ function quoteBlock({ heading = "Tell us what your property needs.", copy = "Cho
 <li><span class="label">Language</span> English or Spanish</li>
 </ul>
 </div>
-<div class="quote__form">${leadForm({ selected, idPrefix: id, button })}</div>
+<div class="quote__form">${leadForm({ selected, cityName, idPrefix: id, button })}</div>
 </div>
 </section>`;
 }
@@ -263,7 +267,7 @@ const businessNode = (full = false) => {
     email: EMAIL,
     slogan: "Do It Right the First Time",
     address: { "@type": "PostalAddress", addressLocality: "Denver", addressRegion: "CO", addressCountry: "US" },
-    areaServed: CITIES.map((c) => ({ "@type": "City", name: `${c.name}, CO` })),
+    areaServed: [...CITIES.map((c) => ({ "@type": "City", name: `${c.name}, CO` })), { "@type": "AdministrativeArea", name: "Douglas County, CO" }],
     openingHoursSpecification: [{ "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], opens: "07:00", closes: "17:00" }],
     knowsLanguage: ["en", "es"],
     makesOffer: SERVICES.map((s) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: s.name, url: abs(s.path) } })),
@@ -294,7 +298,7 @@ function schemaFor(page) {
       serviceType: page.service.name,
       url: abs(page.path),
       provider: { "@id": BUSINESS_ID },
-      areaServed: CITIES.filter((c) => c.key !== "colorado-springs" || page.service.springs).map((c) => ({ "@type": "City", name: `${c.name}, CO` })),
+      areaServed: [...CITIES.filter((c) => c.key !== "colorado-springs" || page.service.springs).map((c) => ({ "@type": "City", name: `${c.name}, CO` })), { "@type": "AdministrativeArea", name: "Douglas County, CO" }],
     });
   }
   if (page.faqs && page.faqs.length) {
@@ -410,7 +414,8 @@ const pages = [];
   const reviews = (content.reviews || []).filter((r) => !r.sample && r.text).slice(0, 2);
   const larger = featured ? featured.faqLargerProperties : "Tell us about your property and the work you have in mind so we can confirm whether it is a fit.";
   const faqs = [
-    ["What does J&M do?", "Sprinkler installation and repair, fall blowouts, spring start-ups and sod installation."],
+    ["What kind of projects does J&M take on?", "New sprinkler systems for new landscapes, larger lots and acreage, full replacements of old systems, and sod installed with the new system. J&amp;M also repairs systems and handles fall blowouts and spring start-ups."],
+    ["Which areas do you prioritize for new installations?", "Castle Rock and the rest of Douglas County, including Parker and Larkspur, and Colorado Springs. J&amp;M also serves Denver, including Green Valley Ranch, Aurora, Thornton and Commerce City."],
     ["Can you work on an existing system?", "Yes. J&amp;M repairs systems installed by other companies."],
     ["Do you work on larger properties?", larger],
     ["¿Hablan español?", "Sí. Puede llamar o enviar un mensaje en español."],
@@ -421,11 +426,11 @@ const pages = [];
   const body = `<section class="hero hero--home">
 <div class="wrap grid-12 hero__grid">
 <div class="hero__text">
-<p class="availability">Denver &amp; the Front Range · Hablamos español · <span class="availability__hours"><span data-hours>${esc(HOURS)}</span></span></p>
-<h1>Sprinkler Repair &amp; Installation in Denver, CO</h1>
-<p class="lead">Sprinkler installation, repairs, seasonal care and sod installation across Denver and the Front Range. Tell us what your property needs.</p>
-<div class="actions">${btn("/contact.html#quote", "Request a quote", { variant: "accent", placement: "hero" })}${callBtn("hero", "ghost")}</div>
-<p class="support">English or Spanish. Call or text.</p>
+<p class="availability">Castle Rock · Douglas County · Colorado Springs · Hablamos español</p>
+<h1>New Sprinkler Systems for Castle Rock, Douglas County &amp; Colorado Springs</h1>
+<p class="lead">J&amp;M plans and installs complete irrigation systems for new landscapes, larger lots and acreage, then tests every zone before handing it over.</p>
+<div class="actions">${btn("/contact.html#quote", "Plan a new system", { variant: "accent", placement: "hero" })}${callBtn("hero", "ghost")}</div>
+<p class="support">Need a repair or seasonal service? <a href="${svc("repair").path}">Sprinkler repair</a> · <a href="${svc("blowouts").path}">Blowouts</a></p>
 </div>
 <div class="hero__media">
 <figure class="hero__main">${heroImage}</figure>
@@ -433,6 +438,21 @@ const pages = [];
 </div>
 </div>
 </section>
+
+<section class="section" aria-labelledby="install-title">
+<div class="wrap grid-12 split">
+<div class="split__main" data-reveal>
+<h2 id="install-title">Irrigation installations, planned before the first trench.</h2>
+<p class="intro">A large system only works if the layout is right. J&amp;M walks the property with you, plans zones around sun, shade, slopes and soil, then installs the pipe, valves, heads and controller and runs every zone before leaving.</p>
+<h3>Projects J&amp;M takes on</h3>
+<ul class="ticks"><li>New systems for new landscapes and new builds</li><li>Larger lots and acreage</li><li>Full replacements of old or failing systems</li><li>New sod installed with the system, watered from day one</li></ul>
+<div class="actions">${btn(svc("install").path, "How installations work", { variant: "primary", placement: "install" })}${btn("/contact.html#quote", "Plan a new system", { variant: "secondary", placement: "install" })}</div>
+</div>
+<figure class="split__side split__photo" data-reveal="image">${workImg("install", { cls: "split__img", sizes: "(min-width: 1024px) 40vw, 100vw" })}</figure>
+</div>
+</section>
+
+${featured ? featured.homeFeature() : ""}
 
 <section class="section proof" aria-labelledby="proof-title">
 <div class="wrap">
@@ -447,7 +467,7 @@ const pages = [];
 <section class="section section--pale" aria-labelledby="services-title">
 <div class="wrap">
 <div class="section-head section-head--split">
-<h2 id="services-title">What does your property need?</h2>
+<h2 id="services-title">Installations first. Repairs and seasonal care too.</h2>
 <a class="text-link" href="/services.html">All services ${ARROW}</a>
 </div>
 ${serviceCards()}
@@ -457,7 +477,7 @@ ${serviceCards()}
 <section class="season" aria-labelledby="season-title">
 <div class="wrap grid-12 season__grid">
 <div class="season__text" data-reveal>
-<h2 id="season-title">Seasonal care for Front Range systems.</h2>
+<h2 id="season-title">Keep the system healthy between seasons.</h2>
 <p>Water left in sprinkler lines expands when it freezes. On the Front Range, a single cold night can crack pipes, valves and backflow devices. In spring, a careful start-up catches problems before they waste water.</p>
 <div class="actions">${btn(svc("blowouts").path, "Book a blowout", { variant: "accent", placement: "season" })}${btn(svc("startup").path, "Spring start-ups", { variant: "ghost", placement: "season" })}</div>
 </div>
@@ -465,13 +485,11 @@ ${serviceCards()}
 </div>
 </section>
 
-${featured ? featured.homeFeature() : ""}
-
 <section class="section" aria-labelledby="people-title">
 <div class="wrap grid-12 people">
 <div class="people__intro" data-reveal>
 <h2 id="people-title">Do it right the first time.</h2>
-<p>Juan's approach is straightforward: understand the problem, explain the work and check the system before leaving. J&amp;M helps homeowners with sprinkler systems, seasonal service and new sod.</p>
+<p>Juan's approach is straightforward: plan the work, explain it before it starts and check the system before leaving. That matters most on a large installation, where a poor layout costs water and repairs for years.</p>
 <a class="text-link" href="/about.html">Meet J&amp;M ${ARROW}</a>
 <div class="people__steps">${steps()}</div>
 </div>
@@ -494,8 +512,8 @@ ${REVIEW_URL ? `<a class="text-link" href="${REVIEW_URL}" data-review-link rel="
 <section class="section" aria-labelledby="areas-title">
 <div class="wrap grid-12 areas">
 <div class="areas__intro">
-<h2 id="areas-title">Based in Denver. Working across the Front Range.</h2>
-<p>Serving Denver, Aurora, Commerce City, Thornton, Parker, Castle Rock and Larkspur, plus larger projects in Colorado Springs.</p>
+<h2 id="areas-title">Castle Rock, Douglas County and Colorado Springs.</h2>
+<p>New installations are J&amp;M's focus in Castle Rock and across Douglas County, including Parker and Larkspur, and in Colorado Springs. J&amp;M is based in Denver and also serves Denver, including Green Valley Ranch, Aurora, Thornton and Commerce City.</p>
 <a class="text-link" href="/service-areas.html">All service areas ${ARROW}</a>
 </div>
 <ul class="area-links">${CITIES.map((c) => `<li><a href="${c.path}">${esc(c.label)}</a></li>`).join("")}</ul>
@@ -512,8 +530,8 @@ ${faqList(faqs)}
 ${quoteBlock()}`;
   pages.push({
     file: "index.html", path: "/", type: "home",
-    title: "J&M Irrigation | Sprinkler Repair & Installation in Denver, CO",
-    description: "Sprinkler repair, installation, blowouts, spring start-ups and sod across Denver and the Front Range. English or Spanish. Call or text 303-549-0712.",
+    title: "New Sprinkler Systems in Castle Rock & Colorado Springs | J&M Irrigation",
+    description: "Irrigation system installation for larger lots and acreage in Castle Rock, Douglas County and Colorado Springs, plus repairs, blowouts and sod. Call 303-549-0712.",
     faqs, body, ogImage: WORK.hero.src,
   });
 }
@@ -543,19 +561,20 @@ const SERVICE_PAGES = [
   },
   {
     key: "install", file: "sprinkler-installation.html", photo: "install", proof: ["street", "patio"],
-    title: "Sprinkler System Installation in Denver, CO | J&M Irrigation",
-    description: "New sprinkler systems planned for your yard: walkthrough and estimate, zone planning, installation, controller setup and a full test of every zone.",
-    h1: "Sprinkler System Installation in Denver, CO",
-    lead: "New systems planned for your yard, your soil and Colorado's weather.",
-    intro: "A sprinkler system is only as good as its install. A poor layout means dry spots, wasted water and repairs you should not need, so we plan every zone around your yard.",
-    listTitle: "What to have ready for a quote",
-    list: ["Your address and the areas of the yard that need water", "Whether there is an old system on the property", "Whether you are also planning new sod"],
-    scopeTitle: "Coordinating with new sod",
-    scope: "Planning sod at the same time? We can install the system and lay the sod together, so the new lawn is watered from day one.",
+    title: "Sprinkler System Installation in Castle Rock, Colorado Springs & Denver | J&M Irrigation",
+    description: "New irrigation systems for larger lots, acreage and new landscapes in Castle Rock, Douglas County, Colorado Springs and Denver: zone plan, install, controller, full test.",
+    h1: "Sprinkler System Installation for Castle Rock, Douglas County, Colorado Springs &amp; Denver",
+    lead: "Complete new irrigation systems for new landscapes, larger lots and acreage, planned for your soil, slopes and Colorado's weather.",
+    intro: "A sprinkler system is only as good as its install. On a large property a poor layout means dry spots, wasted water and years of repairs, so J&amp;M plans every zone around the land before trenching starts.",
+    listTitle: "Projects J&amp;M takes on",
+    list: ["New systems for new landscapes and new builds", "Larger lots and acreage", "Full replacements of old or failing systems", "New sod installed with the system"],
+    scopeTitle: "What to have ready for an estimate",
+    scope: "The property's location and rough size, the areas that need water, whether there is an old system, and whether new sod is planned. J&amp;M can install the system and lay the sod together, so the new lawn is watered from day one.",
     process: [["Walkthrough and estimate", ("We look at the yard with you and give you an estimate. " + fact("freeEstimate")).trim()], ["Zone plan", "Zones are laid out for sun, shade and slopes, and we explain the components and controller before work begins."], ["Installation", "Trenching, pipe, valves and sprinkler heads."], ["Controller setup", "The controller is set up and programmed for your zones."], ["Final test", "Every zone is run and checked before we leave."]],
     pricing: `${fact("freeEstimate")} ${fact("warranty")}`.trim(),
     faqs: [
       ...(SHOW_FACTS ? [["Is the estimate free?", FACTS.freeEstimate]] : []),
+      ["Do you install systems on larger properties and acreage?", "Yes. Larger installations are J&amp;M's focus, especially in Castle Rock, Douglas County and Colorado Springs. Share the location and rough size in your request so we can plan the walkthrough."],
       ["Can you install sod at the same time?", "Yes. Doing both together saves time and makes sure the new lawn is watered from day one."],
       ...(SHOW_FACTS ? [["Do you offer a warranty?", FACTS.warranty]] : []),
     ],
@@ -721,23 +740,24 @@ const CITY_PAGES = {
   parker: {
     title: "Sprinkler Systems in Parker, CO | J&M Irrigation",
     description: "Sprinkler installation, repair, blowouts, spring start-ups and sod in Parker, CO. Request a quote or call or text 303-549-0712.",
-    eyebrow: "Parker, Colorado",
+    eyebrow: "Parker · Douglas County, Colorado",
     h1: "Sprinkler Systems in Parker, CO, Done Right",
-    lead: "J&amp;M installs, repairs and maintains sprinkler systems in Parker, with zones planned around your yard's slopes and sun.",
+    lead: "J&amp;M installs new sprinkler systems in Parker, from typical yards to larger lots, with zones planned around slopes and sun. Repairs and seasonal service too.",
     note: "Tell us whether you need a new system, a repair or seasonal service, and we will confirm the next step.",
   },
   "castle-rock": {
-    title: "Sprinkler & Lawn Services in Castle Rock, CO | J&M Irrigation",
-    description: "Sprinkler installation, repair, blowouts, spring start-ups and sod in Castle Rock, CO. Request a quote or call or text 303-549-0712.",
-    eyebrow: "Castle Rock, Colorado",
-    h1: "Sprinkler &amp; Lawn Services in Castle Rock, CO",
-    lead: "Sloped lots need zones planned so the top of the yard does not dry out while the bottom stays soggy. J&amp;M plans each zone around your slopes.",
-    note: "Describe the slope and the problem areas in your request and we will take it from there.",
+    title: "Sprinkler System Installation in Castle Rock, CO | J&M Irrigation",
+    description: "New irrigation systems for Castle Rock and Douglas County properties, from sloped lots to acreage, plus repairs, blowouts and sod. Call or text 303-549-0712.",
+    eyebrow: "Castle Rock · Douglas County, Colorado",
+    h1: "Sprinkler System Installation in Castle Rock, CO",
+    lead: "New irrigation systems for Castle Rock homes, larger lots and acreage. Sloped ground needs zones planned so the top of the yard does not dry out while the bottom stays soggy, and J&amp;M plans every zone around the land.",
+    note: "Planning a new system? Share the location and the rough size of the property in your request so we can plan the walkthrough.",
+    cta: "Plan a new system in Castle Rock",
   },
   larkspur: {
     title: "Irrigation Services for Larkspur, CO Properties | J&M Irrigation",
     description: "Sprinkler installation, repairs, seasonal service and sod for Larkspur, CO properties, from single repairs to larger lots. Call or text 303-549-0712.",
-    eyebrow: "Larkspur, Colorado",
+    eyebrow: "Larkspur · Douglas County, Colorado",
     h1: "Irrigation Services for Larkspur, CO Properties",
     lead: "From full installs on larger lots to single repairs, J&amp;M works on Larkspur properties of different sizes.",
     note: "Have a larger property? Tell us about the project so we can confirm whether it is a fit.",
@@ -745,9 +765,9 @@ const CITY_PAGES = {
   "colorado-springs": {
     title: "Sprinkler Systems & Larger Projects in Colorado Springs, CO | J&M Irrigation",
     description: "In Colorado Springs, J&M takes on larger projects: new sprinkler systems, sod installation and jobs with several repairs at once. Tell us about your project.",
-    eyebrow: "Colorado Springs, Colorado · Larger projects",
+    eyebrow: "Colorado Springs, Colorado · New installations",
     h1: "Sprinkler Systems &amp; Larger Projects in Colorado Springs, CO",
-    lead: "In Colorado Springs, J&amp;M takes on larger projects: new sprinkler systems, sod installation and jobs with several repairs at once. Tell us what you need and we will let you know if it is a fit.",
+    lead: "In Colorado Springs, J&amp;M focuses on larger projects: new irrigation systems for new landscapes, larger lots and acreage, sod installation and jobs with several repairs at once. Tell us about the property and we will let you know if it is a fit.",
     note: "Routine single repairs and seasonal visits are not offered in Colorado Springs. Describe the property, the location and the work you have in mind, and we will confirm whether the project is a fit before scheduling.",
     services: [
       { ...svc("install"), rowSummary: "New sprinkler systems for larger projects, planned around the property." },
@@ -782,7 +802,7 @@ ${projectNote}
 </div>
 </section>
 
-${quoteBlock({ heading: cp.cta ? `${cp.cta}.` : `Request a quote in ${esc(c.name)}.`, copy: c.key === "colorado-springs" ? "Leave your name and phone number and choose the closest service. We will confirm whether the project is a fit." : undefined })}
+${quoteBlock({ heading: cp.cta ? `${cp.cta}.` : `Request a quote in ${esc(c.name)}.`, cityName: c.name, copy: c.key === "colorado-springs" ? "Share the project type and its rough size. We will confirm whether the project is a fit." : undefined })}
 
 <section class="section" aria-labelledby="nearby-title">
 <div class="wrap">
@@ -799,7 +819,7 @@ pages.push({
   crumbs: [{ name: "Home", path: "/" }, { name: "Services", path: "/services.html" }],
   title: "Sprinkler & Sod Services in Denver, CO | J&M Irrigation",
   description: "Sprinkler repair, installation, blowouts, spring start-ups and sod installation across Denver and the Front Range. English or Spanish.",
-  body: `${pageHero({ h1: "Sprinkler and sod services in Denver and the Front Range", lead: "Whether you are starting from bare dirt or fixing a system that has never worked quite right, J&amp;M handles it from start to finish. Pick a service, or call and we will point you in the right direction.", image: "" })}
+  body: `${pageHero({ h1: "Sprinkler and sod services in Denver and the Front Range", lead: "New irrigation systems are J&amp;M's focus, from new landscapes to larger lots and acreage. Repairs, seasonal service and sod round out the work. Pick a service, or call and we will point you in the right direction.", image: "" })}
 <section class="section" aria-labelledby="services-title">
 <div class="wrap">
 <h2 id="services-title">Five services</h2>
@@ -819,9 +839,9 @@ ${quoteBlock()}`,
 pages.push({
   file: "service-areas.html", path: "/service-areas.html", type: "info",
   crumbs: [{ name: "Home", path: "/" }, { name: "Service Areas", path: "/service-areas.html" }],
-  title: "Areas We Serve | J&M Irrigation, Denver, CO",
-  description: "J&M Irrigation serves Denver, Aurora, Commerce City, Thornton, Parker, Castle Rock and Larkspur, plus larger projects in Colorado Springs.",
-  body: `${pageHero({ h1: "Sprinkler and sod services across the Front Range", lead: "J&amp;M is based in Denver and serves Denver, Aurora, Commerce City, Thornton, Parker, Castle Rock and Larkspur, plus larger projects in Colorado Springs. Do not see your city? Call and ask.", image: "" })}
+  title: "Service Areas: Castle Rock, Douglas County, Colorado Springs & Denver | J&M Irrigation",
+  description: "J&M installs new irrigation systems in Castle Rock, Douglas County and Colorado Springs, and serves Denver, Aurora, Thornton and Commerce City.",
+  body: `${pageHero({ h1: "Sprinkler installation across Douglas County, Colorado Springs and Denver", lead: "New installations are J&amp;M's focus in Castle Rock and across Douglas County, including Parker and Larkspur, and in Colorado Springs. J&amp;M is based in Denver and also serves Denver, including Green Valley Ranch, Aurora, Thornton and Commerce City. Do not see your city? Call and ask.", image: "" })}
 <section class="section" aria-labelledby="areas-title">
 <div class="wrap">
 <h2 id="areas-title">Choose your city</h2>
@@ -879,14 +899,14 @@ pages.push({
 <div class="wrap grid-12 quote">
 <div class="quote__intro">
 <h1 id="contact-title">Request a quote</h1>
-<p class="lead">Tell us what your property needs. J&amp;M will get back to you about the next step.</p>
+<p class="lead">Tell us where the property is, what kind of project it is and roughly how large. J&amp;M will get back to you about the next step.</p>
 ${SHOW_FACTS ? `<p>${FACTS.freeEstimate} ${FACTS.diagnostic}</p>` : ""}
 <ul class="contact-list">
 <li><span class="label">Call or text</span> <a href="${TEL}" data-phone-link data-phone-text data-placement="contact">${esc(PHONE)}</a></li>
 <li><span class="label">Email</span> <a href="mailto:${EMAIL}">${EMAIL}</a></li>
 <li><span class="label">Hours</span> <span data-hours>${esc(HOURS)}</span>. Closed Sunday.</li>
 <li><span class="label">Language</span> English or Spanish</li>
-<li><span class="label">Service area</span> Denver, Aurora, Commerce City, Thornton, Parker, Castle Rock and Larkspur, plus larger projects in Colorado Springs</li>
+<li><span class="label">Service area</span> Castle Rock, Douglas County (including Parker and Larkspur) and Colorado Springs, plus Denver, Aurora, Thornton and Commerce City</li>
 </ul>
 </div>
 <div class="quote__form">${leadForm({ name: "estimate", idPrefix: "e", extended: true })}</div>

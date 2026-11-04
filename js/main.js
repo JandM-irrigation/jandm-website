@@ -98,7 +98,8 @@
   var MESSAGES = {
     full_name: "Enter your name.",
     phone: "Enter a phone number with at least 10 digits.",
-    service_needed: "Choose the service you need, or Not sure.",
+    city: "Choose where the project is, or Somewhere else.",
+    service_needed: "Choose the project type, or Not sure.",
     email: "Enter a valid email address, or leave it empty."
   };
 

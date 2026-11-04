@@ -67,6 +67,8 @@ const fill = (name = NAME, phone = PHONE) => js(`(() => { const f = document.que
   f.querySelector('[name=full_name]').focus();
   f.querySelector('[name=full_name]').value = ${JSON.stringify(name)};
   f.querySelector('[name=phone]').value = ${JSON.stringify(phone)};
+  f.querySelector('[name=city]').value = 'Castle Rock';
+  f.querySelector('[name=project_scope]').value = 'Acreage or several properties';
   const s = f.querySelector('[name=service_needed]'); s.value = 'Sprinkler repair'; s.dispatchEvent(new Event('change')); return true; })()`);
 const submit = () => js(`document.querySelector('form[data-lead-form] button[type=submit]').click(), true`);
 const events = (name) => js(`(window.dataLayer || []).filter(a => a && a[0] === 'event'${name ? ` && a[1] === ${JSON.stringify(name)}` : ""}).map(a => [a[1], a[2]])`);
@@ -98,7 +100,7 @@ check("accepted: one request sent despite double click", posts.length === 1, `po
 check("accepted: success message shown, no preview note", s.success && s.title && !s.preview);
 check("accepted: exactly one generate_lead", leads.length === 1, JSON.stringify(leads));
 check("accepted: lead params are the allowlist only", leads.length === 1 && JSON.stringify(Object.keys(leads[0][1]).sort()) === '["form_id","page_type","service"]' && leads[0][1].service === "repair");
-check("accepted: Netlify form fields posted", /form-name=quote/.test(posts[0] || "") && /service_needed=Sprinkler\+repair/.test(posts[0] || ""));
+check("accepted: Netlify form fields posted", /form-name=quote/.test(posts[0] || "") && /service_needed=Sprinkler\+repair/.test(posts[0] || "") && /city=Castle\+Rock/.test(posts[0] || "") && /project_scope=Acreage\+or\+several\+properties/.test(posts[0] || ""));
 const layer = await js("JSON.stringify(window.dataLayer || [])");
 check("no name or phone in analytics", !layer.includes("Testy") && !layer.includes("555") && !layer.includes("0199"));
 
