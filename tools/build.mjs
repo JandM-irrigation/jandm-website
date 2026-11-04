@@ -2,6 +2,10 @@
 //
 //   node tools/build.mjs            public build: writes the pages into the repository root
 //                                   (what Netlify publishes). Projects with publish: false are left out.
+//   node tools/build.mjs --stage <folder>
+//                                   hosted-preview staging build: the public build plus the featured
+//                                   project and its photos, written to a folder OUTSIDE this repository
+//                                   (never committed here). Unconfirmed facts stay hidden.
 //   node tools/build.mjs --preview  local review build in .preview/ (git-ignored): every page is
 //                                   noindex, analytics is not loaded, and unconfirmed facts and the
 //                                   unpublished featured project are included for review.
@@ -21,7 +25,10 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PREVIEW = process.argv.includes("--preview");
-const OUT = PREVIEW ? path.join(ROOT, ".preview") : ROOT;
+const STAGE_AT = process.argv.indexOf("--stage");
+const STAGE = STAGE_AT > -1 ? path.resolve(process.argv[STAGE_AT + 1] || ROOT) : "";
+if (STAGE && (STAGE === ROOT || STAGE.startsWith(ROOT + path.sep))) throw new Error("--stage needs an output folder outside the repository");
+const OUT = PREVIEW ? path.join(ROOT, ".preview") : STAGE || ROOT;
 const content = JSON.parse(fs.readFileSync(path.join(ROOT, "content", "site.json"), "utf8"));
 const PHONE = content.phone || "303-549-0712";
 const HOURS = content.hours || "Mon–Sat, 7am–5pm";
@@ -39,7 +46,7 @@ const SHOW_FACTS = FACTS_CONFIRMED || PREVIEW;
 const fact = (key) => (SHOW_FACTS ? FACTS[key] : "");
 const FEATURED_FILE = path.join(ROOT, ".private", "featured-project.mjs");
 const featuredModule = fs.existsSync(FEATURED_FILE) ? (await import(pathToFileURL(FEATURED_FILE).href)).default : null;
-const featuredDef = featuredModule && (featuredModule.publish || PREVIEW) ? featuredModule : null;
+const featuredDef = featuredModule && (featuredModule.publish || PREVIEW || STAGE) ? featuredModule : null;
 
 /* ---------- helpers ---------- */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -130,14 +137,14 @@ function leadForm({ name = "quote", idPrefix = "q", selected = "", cityName = ""
   const core = [
     field(`${p}-name`, "Full name", `<input id="${p}-name" name="full_name" type="text" autocomplete="name" required aria-describedby="${p}-name-error">`),
     field(`${p}-phone`, "Phone", `<input id="${p}-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required aria-describedby="${p}-phone-error">`),
+    field(`${p}-email`, "Email <span class=\"optional\">(optional)</span>", `<input id="${p}-email" name="email" type="email" autocomplete="email" aria-describedby="${p}-email-error">`),
     field(`${p}-city`, "Project location", `<select id="${p}-city" name="city" required aria-describedby="${p}-city-error"><option value="">Choose the city or area</option>${opts(LOCATIONS, cityName)}</select>`),
     field(`${p}-service`, "Project type", `<select id="${p}-service" name="service_needed" required aria-describedby="${p}-service-error"><option value="">Choose a project type</option>${serviceOptions(selected)}</select>`),
     field(`${p}-scope`, "Approximate size <span class=\"optional\">(optional)</span>", `<select id="${p}-scope" name="project_scope" aria-describedby="${p}-scope-error"><option value="">Choose the closest size</option>${opts(SCOPES)}</select>`),
+    field(`${p}-message`, "Tell us more <span class=\"optional\">(optional)</span>", `<textarea id="${p}-message" name="message" rows="4" aria-describedby="${p}-message-error"></textarea>`),
   ];
   const more = extended ? [
-    field(`${p}-email`, "Email <span class=\"optional\">(optional)</span>", `<input id="${p}-email" name="email" type="email" autocomplete="email" aria-describedby="${p}-email-error">`),
     field(`${p}-language`, "Preferred language <span class=\"optional\">(optional)</span>", `<select id="${p}-language" name="language" aria-describedby="${p}-language-error"><option value="">No preference</option><option>English</option><option>Español</option></select>`),
-    field(`${p}-message`, "Tell us more <span class=\"optional\">(optional)</span>", `<textarea id="${p}-message" name="message" rows="4" aria-describedby="${p}-message-error"></textarea>`),
   ] : [];
   return `<div class="lead" data-lead>
 <form class="lead__form" name="${name}" method="POST" action="/" data-netlify="true" netlify-honeypot="company" data-lead-form data-form-id="${name}">
@@ -971,20 +978,21 @@ for (const page of pages) {
   fs.writeFileSync(file, layout(page));
 }
 
-const sitemapUrls = pages.filter((p) => p.path && !p.noindex && (p.type !== "project" || featuredModule?.publish));
+const sitemapUrls = pages.filter((p) => p.path && !p.noindex && (p.type !== "project" || featuredModule?.publish || STAGE));
 fs.writeFileSync(path.join(OUT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${sitemapUrls.map((p) => `<url><loc>${abs(p.path)}</loc></url>`).join("\n")}
 </urlset>
 `);
 
-if (!PREVIEW) {
+if (STAGE && !featured) throw new Error("--stage needs .private/featured-project.mjs");
+if (!PREVIEW && !STAGE) {
   if (featuredModule && !featuredModule.publish && fs.existsSync(path.join(ROOT, featuredModule.url.slice(1)))) {
     throw new Error("An unpublished featured project page exists in the public build: " + featuredModule.url);
   }
 } else {
-  // Copy the public assets the pages use, plus the unpublished featured-project photos, into the preview.
-  for (const dir of ["assets", "js", "content", "images/brand", "images/work"]) {
+  // Preview: copy the public assets the pages use. Preview and staging: add the featured-project photos.
+  if (PREVIEW) for (const dir of ["assets", "js", "content", "images/brand", "images/work"]) {
     fs.cpSync(path.join(ROOT, dir), path.join(OUT, dir), { recursive: true });
   }
   if (featured) {
@@ -993,6 +1001,6 @@ if (!PREVIEW) {
     fs.mkdirSync(dest, { recursive: true });
     for (const f of fs.readdirSync(src).filter((f) => f.endsWith(".webp"))) fs.copyFileSync(path.join(src, f), path.join(dest, f));
   }
-  fs.writeFileSync(path.join(OUT, "robots.txt"), "User-agent: *\nDisallow: /\n");
+  if (PREVIEW) fs.writeFileSync(path.join(OUT, "robots.txt"), "User-agent: *\nDisallow: /\n");
 }
-console.log(`${PREVIEW ? "Preview" : "Public"} build: ${pages.length} pages written to ${path.relative(ROOT, OUT) || "."}${featured && !featured.publish ? " (includes the unpublished featured project)" : ""}.`);
+console.log(`${PREVIEW ? "Preview" : STAGE ? "Staging" : "Public"} build: ${pages.length} pages written to ${path.relative(ROOT, OUT) || "."}${featured && !featured.publish ? " (includes the unpublished featured project)" : ""}.`);

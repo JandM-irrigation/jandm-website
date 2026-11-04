@@ -102,6 +102,11 @@ if (location.hostname === "jmirrigationco.com") {
 <p class="field__error" id="quote-phone-error" hidden></p>
 </div>
 <div class="field">
+<label for="quote-email">Email <span class="optional">(optional)</span></label>
+<input id="quote-email" name="email" type="email" autocomplete="email" aria-describedby="quote-email-error">
+<p class="field__error" id="quote-email-error" hidden></p>
+</div>
+<div class="field">
 <label for="quote-city">Project location</label>
 <select id="quote-city" name="city" required aria-describedby="quote-city-error"><option value="">Choose the city or area</option><option>Castle Rock</option><option>Colorado Springs</option><option>Parker</option><option>Larkspur</option><option>Denver</option><option>Aurora</option><option>Thornton</option><option>Commerce City</option><option>Elsewhere in Douglas County</option><option>Elsewhere in El Paso County</option><option>Somewhere else</option></select>
 <p class="field__error" id="quote-city-error" hidden></p>
@@ -115,6 +120,11 @@ if (location.hostname === "jmirrigationco.com") {
 <label for="quote-scope">Approximate size <span class="optional">(optional)</span></label>
 <select id="quote-scope" name="project_scope" aria-describedby="quote-scope-error"><option value="">Choose the closest size</option><option>A repair or small job</option><option>A typical home yard</option><option>A large lot (about half an acre or more)</option><option>Acreage or several properties</option><option>Not sure yet</option></select>
 <p class="field__error" id="quote-scope-error" hidden></p>
+</div>
+<div class="field">
+<label for="quote-message">Tell us more <span class="optional">(optional)</span></label>
+<textarea id="quote-message" name="message" rows="4" aria-describedby="quote-message-error"></textarea>
+<p class="field__error" id="quote-message-error" hidden></p>
 </div>
 <button class="btn btn--primary btn--block" type="submit">Request a quote</button>
 <p class="lead__error" data-form-error role="alert" hidden>Your request did not go through. Please try again, or call or text <a href="tel:+13035490712" data-phone-link data-placement="form">303-549-0712</a>.</p>

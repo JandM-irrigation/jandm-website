@@ -69,6 +69,8 @@ const fill = (name = NAME, phone = PHONE) => js(`(() => { const f = document.que
   f.querySelector('[name=phone]').value = ${JSON.stringify(phone)};
   f.querySelector('[name=city]').value = 'Castle Rock';
   f.querySelector('[name=project_scope]').value = 'Acreage or several properties';
+  f.querySelector('[name=email]').value = 'testy@example.com';
+  f.querySelector('[name=message]').value = 'New system for a 5 acre lot';
   const s = f.querySelector('[name=service_needed]'); s.value = 'Sprinkler repair'; s.dispatchEvent(new Event('change')); return true; })()`);
 const submit = () => js(`document.querySelector('form[data-lead-form] button[type=submit]').click(), true`);
 const events = (name) => js(`(window.dataLayer || []).filter(a => a && a[0] === 'event'${name ? ` && a[1] === ${JSON.stringify(name)}` : ""}).map(a => [a[1], a[2]])`);
@@ -100,7 +102,13 @@ check("accepted: one request sent despite double click", posts.length === 1, `po
 check("accepted: success message shown, no preview note", s.success && s.title && !s.preview);
 check("accepted: exactly one generate_lead", leads.length === 1, JSON.stringify(leads));
 check("accepted: lead params are the allowlist only", leads.length === 1 && JSON.stringify(Object.keys(leads[0][1]).sort()) === '["form_id","page_type","service"]' && leads[0][1].service === "repair");
-check("accepted: Netlify form fields posted", /form-name=quote/.test(posts[0] || "") && /service_needed=Sprinkler\+repair/.test(posts[0] || "") && /city=Castle\+Rock/.test(posts[0] || "") && /project_scope=Acreage\+or\+several\+properties/.test(posts[0] || ""));
+{
+  const sent = new URLSearchParams(posts[0] || "");
+  const want = { "form-name": "quote", full_name: NAME, phone: PHONE, email: "testy@example.com", city: "Castle Rock", service_needed: "Sprinkler repair", project_scope: "Acreage or several properties", message: "New system for a 5 acre lot" };
+  const missing = Object.entries(want).filter(([k, v]) => sent.get(k) !== v).map(([k]) => k);
+  check("accepted: all seven lead fields posted to Netlify Forms", missing.length === 0, missing.length ? "missing: " + missing.join(", ") : "");
+  check("accepted: honeypot posted empty", sent.get("company") === "");
+}
 const layer = await js("JSON.stringify(window.dataLayer || [])");
 check("no name or phone in analytics", !layer.includes("Testy") && !layer.includes("555") && !layer.includes("0199"));
 

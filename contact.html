@@ -86,6 +86,11 @@ if (location.hostname === "jmirrigationco.com") {
 <p class="field__error" id="e-phone-error" hidden></p>
 </div>
 <div class="field">
+<label for="e-email">Email <span class="optional">(optional)</span></label>
+<input id="e-email" name="email" type="email" autocomplete="email" aria-describedby="e-email-error">
+<p class="field__error" id="e-email-error" hidden></p>
+</div>
+<div class="field">
 <label for="e-city">Project location</label>
 <select id="e-city" name="city" required aria-describedby="e-city-error"><option value="">Choose the city or area</option><option>Castle Rock</option><option>Colorado Springs</option><option>Parker</option><option>Larkspur</option><option>Denver</option><option>Aurora</option><option>Thornton</option><option>Commerce City</option><option>Elsewhere in Douglas County</option><option>Elsewhere in El Paso County</option><option>Somewhere else</option></select>
 <p class="field__error" id="e-city-error" hidden></p>
@@ -101,19 +106,14 @@ if (location.hostname === "jmirrigationco.com") {
 <p class="field__error" id="e-scope-error" hidden></p>
 </div>
 <div class="field">
-<label for="e-email">Email <span class="optional">(optional)</span></label>
-<input id="e-email" name="email" type="email" autocomplete="email" aria-describedby="e-email-error">
-<p class="field__error" id="e-email-error" hidden></p>
+<label for="e-message">Tell us more <span class="optional">(optional)</span></label>
+<textarea id="e-message" name="message" rows="4" aria-describedby="e-message-error"></textarea>
+<p class="field__error" id="e-message-error" hidden></p>
 </div>
 <div class="field">
 <label for="e-language">Preferred language <span class="optional">(optional)</span></label>
 <select id="e-language" name="language" aria-describedby="e-language-error"><option value="">No preference</option><option>English</option><option>Español</option></select>
 <p class="field__error" id="e-language-error" hidden></p>
-</div>
-<div class="field">
-<label for="e-message">Tell us more <span class="optional">(optional)</span></label>
-<textarea id="e-message" name="message" rows="4" aria-describedby="e-message-error"></textarea>
-<p class="field__error" id="e-message-error" hidden></p>
 </div>
 <button class="btn btn--primary btn--block" type="submit">Request a quote</button>
 <p class="lead__error" data-form-error role="alert" hidden>Your request did not go through. Please try again, or call or text <a href="tel:+13035490712" data-phone-link data-placement="form">303-549-0712</a>.</p>
