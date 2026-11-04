@@ -1,17 +1,13 @@
 // Builds the J&M Irrigation Services static site from tools/site-data.mjs and content/site.json.
 //
 //   node tools/build.mjs            public build: writes the pages into the repository root
-//                                   (what Netlify publishes). Projects with publish: false are left out.
-//   node tools/build.mjs --stage <folder>
-//                                   hosted-preview staging build: the public build plus the featured
-//                                   project and its photos, written to a folder OUTSIDE this repository
-//                                   (never committed here). Unconfirmed facts stay hidden.
+//                                   (what Netlify publishes). A featured project with publish: false is left out.
 //   node tools/build.mjs --preview  local review build in .preview/ (git-ignored): every page is
 //                                   noindex, analytics is not loaded, and unconfirmed facts and the
 //                                   unpublished featured project are included for review.
 //
-// The featured project lives in .private/featured-project.mjs (git-ignored) until the owner records
-// publication permission. Public builds include it only when that file sets publish: true.
+// The featured project is defined in tools/featured-project.mjs. Public builds include it only when it
+// sets publish: true; an unpublished project can be kept in git-ignored .private/ until approved.
 //
 // No dependencies. The HTML is committed, so Netlify needs no build step. CMS edits to
 // content/site.json still show on the live site through js/main.js; rebuild to bake them in.
@@ -25,10 +21,7 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PREVIEW = process.argv.includes("--preview");
-const STAGE_AT = process.argv.indexOf("--stage");
-const STAGE = STAGE_AT > -1 ? path.resolve(process.argv[STAGE_AT + 1] || ROOT) : "";
-if (STAGE && (STAGE === ROOT || STAGE.startsWith(ROOT + path.sep))) throw new Error("--stage needs an output folder outside the repository");
-const OUT = PREVIEW ? path.join(ROOT, ".preview") : STAGE || ROOT;
+const OUT = PREVIEW ? path.join(ROOT, ".preview") : ROOT;
 const content = JSON.parse(fs.readFileSync(path.join(ROOT, "content", "site.json"), "utf8"));
 const PHONE = content.phone || "303-549-0712";
 const HOURS = content.hours || "Mon–Sat, 7am–5pm";
@@ -44,9 +37,9 @@ const REVIEW_URL = /^https:\/\//.test(content.google_review_url || "") ? content
 // Unconfirmed business facts show only in the local review build until the owner confirms them.
 const SHOW_FACTS = FACTS_CONFIRMED || PREVIEW;
 const fact = (key) => (SHOW_FACTS ? FACTS[key] : "");
-const FEATURED_FILE = path.join(ROOT, ".private", "featured-project.mjs");
-const featuredModule = fs.existsSync(FEATURED_FILE) ? (await import(pathToFileURL(FEATURED_FILE).href)).default : null;
-const featuredDef = featuredModule && (featuredModule.publish || PREVIEW || STAGE) ? featuredModule : null;
+const FEATURED_FILE = [path.join(ROOT, "tools", "featured-project.mjs"), path.join(ROOT, ".private", "featured-project.mjs")].find((f) => fs.existsSync(f));
+const featuredModule = FEATURED_FILE ? (await import(pathToFileURL(FEATURED_FILE).href)).default : null;
+const featuredDef = featuredModule && (featuredModule.publish || PREVIEW) ? featuredModule : null;
 
 /* ---------- helpers ---------- */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -360,7 +353,7 @@ ${page.path ? `<script type="application/ld+json">${schemaFor(page)}</script>` :
 </head>
 <body data-page-type="${page.type}">
 <a class="skip" href="#main">Skip to content</a>
-${PREVIEW ? `<p class="preview-flag">${featured ? featured.previewNote : "Local review build. Not published."}</p>` : ""}
+${PREVIEW ? `<p class="preview-flag">Local review build. Not published.</p>` : ""}
 <div class="banner" data-banner role="region" aria-label="Seasonal announcement"${BANNER ? "" : " hidden"}><p class="wrap banner__inner"><span class="banner__text" data-banner-text>${esc(BANNER?.text || "")}</span> <a class="banner__cta" data-banner-link data-placement="banner" href="${BANNER?.button_link ? "/" + esc(String(BANNER.button_link).replace(/^\//, "")) : "/contact.html#quote"}">${esc(BANNER?.button_text || "Learn more")}</a></p></div>
 ${header(page.navCurrent || page.path)}
 ${breadcrumbs(page.crumbs)}
@@ -978,29 +971,28 @@ for (const page of pages) {
   fs.writeFileSync(file, layout(page));
 }
 
-const sitemapUrls = pages.filter((p) => p.path && !p.noindex && (p.type !== "project" || featuredModule?.publish || STAGE));
+const sitemapUrls = pages.filter((p) => p.path && !p.noindex && (p.type !== "project" || featuredModule?.publish));
 fs.writeFileSync(path.join(OUT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${sitemapUrls.map((p) => `<url><loc>${abs(p.path)}</loc></url>`).join("\n")}
 </urlset>
 `);
 
-if (STAGE && !featured) throw new Error("--stage needs .private/featured-project.mjs");
-if (!PREVIEW && !STAGE) {
+if (!PREVIEW) {
   if (featuredModule && !featuredModule.publish && fs.existsSync(path.join(ROOT, featuredModule.url.slice(1)))) {
     throw new Error("An unpublished featured project page exists in the public build: " + featuredModule.url);
   }
 } else {
-  // Preview: copy the public assets the pages use. Preview and staging: add the featured-project photos.
-  if (PREVIEW) for (const dir of ["assets", "js", "content", "images/brand", "images/work"]) {
-    fs.cpSync(path.join(ROOT, dir), path.join(OUT, dir), { recursive: true });
+  // Copy the public assets the pages use, plus the photos of an unpublished featured project, into the preview.
+  for (const dir of ["assets", "js", "content", "images/brand", "images/work", "images/projects"]) {
+    if (fs.existsSync(path.join(ROOT, dir))) fs.cpSync(path.join(ROOT, dir), path.join(OUT, dir), { recursive: true });
   }
-  if (featured) {
+  if (featured && !featured.publish) {
     const src = path.join(ROOT, featured.assetSource);
     const dest = path.join(OUT, featured.imageDir.slice(1));
     fs.mkdirSync(dest, { recursive: true });
     for (const f of fs.readdirSync(src).filter((f) => f.endsWith(".webp"))) fs.copyFileSync(path.join(src, f), path.join(dest, f));
   }
-  if (PREVIEW) fs.writeFileSync(path.join(OUT, "robots.txt"), "User-agent: *\nDisallow: /\n");
+  fs.writeFileSync(path.join(OUT, "robots.txt"), "User-agent: *\nDisallow: /\n");
 }
-console.log(`${PREVIEW ? "Preview" : STAGE ? "Staging" : "Public"} build: ${pages.length} pages written to ${path.relative(ROOT, OUT) || "."}${featured && !featured.publish ? " (includes the unpublished featured project)" : ""}.`);
+console.log(`${PREVIEW ? "Preview" : "Public"} build: ${pages.length} pages written to ${path.relative(ROOT, OUT) || "."}${featured && !featured.publish ? " (includes the unpublished featured project)" : ""}.`);

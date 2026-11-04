@@ -11,9 +11,10 @@ const PREVIEW = process.argv.includes("--preview");
 const DIR = PREVIEW ? path.join(ROOT, ".preview") : ROOT;
 const SITE = "https://jmirrigationco.com";
 const RETAINED = ["/", "/services.html", "/service-areas.html", "/about.html", "/contact.html", "/sprinkler-installation.html", "/sprinkler-repair.html", "/sprinkler-blowouts.html", "/spring-start-up.html", "/sod-installation.html", "/sprinkler-services-denver.html", "/sprinkler-services-aurora.html", "/sprinkler-services-commerce-city.html", "/sprinkler-services-thornton.html", "/sprinkler-services-parker.html", "/sprinkler-services-castle-rock.html", "/sprinkler-services-larkspur.html", "/sprinkler-services-colorado-springs.html", "/privacy.html", "/terms.html"];
-// The unpublished featured project is git-ignored in .private/; its markers drive the leak checks.
-const FEATURED_FILE = path.join(ROOT, ".private", "featured-project.mjs");
-const featured = fs.existsSync(FEATURED_FILE) ? (await import(pathToFileURL(FEATURED_FILE).href)).default : null;
+// The featured project (tools/, or git-ignored .private/ while unpublished). An unpublished project must
+// leave no page, photo or marker text in the public build.
+const FEATURED_FILE = [path.join(ROOT, "tools", "featured-project.mjs"), path.join(ROOT, ".private", "featured-project.mjs")].find((f) => fs.existsSync(f));
+const featured = FEATURED_FILE ? (await import(pathToFileURL(FEATURED_FILE).href)).default : null;
 const PROJECT = featured ? featured.url : null;
 // Claims that stay out of the public build until the owner confirms them (FACTS in site-data.mjs).
 const UNCONFIRMED = ["$75", "1-year warranty", "blowout is free", "blowout is on us", "20+ years", "20 years"];
@@ -21,14 +22,15 @@ const fileFor = (u) => path.join(DIR, u === "/" ? "index.html" : u.slice(1));
 const fails = []; let checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) fails.push(msg); };
 
-const pages = [...RETAINED, ...(PREVIEW && PROJECT ? [PROJECT] : []), "/404.html"];
+const pages = [...RETAINED, ...(PROJECT && (PREVIEW || featured.publish) ? [PROJECT] : []), "/404.html"];
 if (PROJECT && !featured.publish) ok(PREVIEW || !fs.existsSync(fileFor(PROJECT)), "public build contains the unpublished project page");
-ok(PREVIEW || !fs.existsSync(path.join(DIR, "images", "projects")), "public build contains unpublished project images");
+ok(PREVIEW || featured?.publish || !fs.existsSync(path.join(DIR, "images", "projects")), "public build contains unpublished project images");
 for (const u of RETAINED) ok(fs.existsSync(fileFor(u)), `missing retained URL ${u}`);
 
 const sitemap = fs.readFileSync(path.join(DIR, "sitemap.xml"), "utf8");
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-ok(JSON.stringify(locs.sort()) === JSON.stringify(RETAINED.map((u) => SITE + u).sort()), `sitemap does not list exactly the 20 retained URLs (${locs.length})`);
+const EXPECTED = [...RETAINED, ...(PROJECT && featured.publish ? [PROJECT] : [])];
+ok(JSON.stringify(locs.sort()) === JSON.stringify(EXPECTED.map((u) => SITE + u).sort()), `sitemap does not list exactly the 20 retained URLs plus any published project (${locs.length})`);
 
 let links = 0;
 for (const u of pages) {
