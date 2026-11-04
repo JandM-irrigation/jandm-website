@@ -559,6 +559,11 @@ a:hover .arrow { transform: translateX(4px); }
 .footer__base p { margin: 0; }
 .footer__base ul { list-style: none; display: flex; gap: 20px; }
 .footer__base a { display: inline-flex; min-height: 44px; align-items: center; }
+/* Agency credit: the quietest line in the footer, under the copyright row. */
+.footer__credit { margin: 4px auto 0; font-size: .8125rem; color: #C3D5CB; }
+.footer__credit a { display: inline-block; padding: 4px 2px; text-decoration: underline; text-decoration-color: rgb(255 255 255 / .45); }
+.footer__credit a:hover { text-decoration-color: currentColor; }
+.footer__credit a:focus-visible { outline-offset: 1px; }
 @media (min-width: 768px) { .footer__grid { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1024px) { .footer__grid { grid-template-columns: 4fr 3fr 3fr 3fr; } }
 
