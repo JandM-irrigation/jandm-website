@@ -1,212 +1,270 @@
-/* J&M Irrigation Services — site script
-   Reads /content/site.json (edited in the CMS at /admin) and applies it to the page,
-   so CMS changes show up right after Netlify publishes them. The HTML ships with the
-   same content baked in, so the page is complete even before this runs. */
+/* J&M Irrigation Services — site script.
+   The HTML is complete without this file. It adds: the phone menu, CMS updates from
+   /content/site.json (phone, hours, seasonal banner, reviews), quote-form validation and
+   sending, and privacy-safe analytics events. Keep the review excerpt and banner logic in step
+   with tools/build.mjs. */
 (function () {
   "use strict";
-  var LIVE = /jmirrigationco\.com$|netlify\.app$/.test(location.hostname);
+
+  /* Only the real production host sends leads or analytics. Preview hosts, Netlify deploy
+     previews and local copies never trigger live delivery. */
+  var PRODUCTION_HOSTS = ["jmirrigationco.com"];
+  var LIVE = PRODUCTION_HOSTS.indexOf(location.hostname) !== -1;
+  var PAGE_TYPE = document.body.getAttribute("data-page-type") || "other";
   var content = null;
 
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  /* ---------- analytics (non-personal parameters only; fails silently) ---------- */
+  function track(name, params) {
+    if (!LIVE) return;
+    try { if (typeof window.gtag === "function") window.gtag("event", name, params); } catch (e) { /* analytics unavailable */ }
+  }
+
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="tel:"], a[href^="sms:"]');
+    if (!a) return;
+    track("contact_click", {
+      contact_method: a.getAttribute("href").indexOf("sms:") === 0 ? "sms" : "phone",
+      page_type: PAGE_TYPE,
+      placement: a.getAttribute("data-placement") || "body"
+    });
+  });
+
+  /* ---------- CMS content ---------- */
   function tel(p) { var d = String(p).replace(/\D/g, ""); return "tel:+" + (d.length === 10 ? "1" + d : d); }
-
-  /* ---------- Templates (keep in sync with build.py) ---------- */
-  var STAR = '<svg viewBox="0 0 20 20" class="h-[18px] w-[18px]" aria-hidden="true"><path fill="currentColor" d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L10 14.9l-5.3 2.7 1-5.8L1.5 7.7l5.9-.9z"/></svg>';
-  function serviceCard(s, city, i) {
-    var big = i === 0;
-    return '<a href="' + esc(s.link || "contact.html") + '" class="card-link group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5' + (big ? ' sm:col-span-2 lg:row-span-2' : '') + '">' +
-      '<div class="overflow-hidden ' + (big ? 'aspect-[16/10] lg:aspect-auto lg:flex-1' : 'aspect-[16/10]') + '"><img class="photo h-full w-full" src="' + esc(s.photo) + '" alt="' + esc(s.photo_alt) + '" width="1100" height="1100" loading="lazy" decoding="async"></div>' +
-      '<div class="flex flex-col gap-2 p-6"><h3 class="' + (big ? 'text-2xl' : 'text-xl') + ' font-bold">' + esc(s.name) + ' in ' + esc(city) + '</h3>' +
-      '<p class="text-base text-muted">' + esc(s.summary) + '</p>' +
-      '<span class="mt-1 font-display text-[15px] font-bold text-water">See ' + esc(String(s.name).toLowerCase()) + ' details →</span></div></a>';
-  }
-  function reviewCard(r) {
-    var n = Math.max(0, Math.min(5, +r.rating || 5)), stars = "";
-    for (var i = 0; i < 5; i++) stars += '<span class="' + (i < n ? 'text-[#F5B301]' : 'text-line') + '">' + STAR + '</span>';
-    var meta = [r.location, r.when].filter(Boolean).map(esc).join(' · ');
-    var name = /^https:\/\//.test(r.url || "") ? '<a class="hover:underline" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' : esc(r.name);
-    return '<article' + (r.sample ? ' data-placeholder="review"' : '') + ' class="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-card ring-1 ring-black/5">' +
-      '<div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-full bg-forest font-display text-base font-bold text-white">' + esc(String(r.name || "?").charAt(0)) + '</span>' +
-      '<div><p class="font-semibold leading-tight text-ink">' + name + '</p><p class="text-sm text-muted">' + meta + '</p></div></div>' +
-      '<div class="flex gap-0.5" role="img" aria-label="' + n + ' out of 5 stars">' + stars + '</div>' +
-      '<p class="text-base text-ink/90">' + esc(r.text) + '</p></article>';
-  }
-
-  /* ---------- Seasonal banner ---------- */
   function md(d) { return (d.getMonth() + 1) * 100 + d.getDate(); }
   function parseMD(s) { var p = String(s || "").split("-"); return (+p[0]) * 100 + (+p[1]); }
-  function pickBanner(list, now) {
+  function currentBanner(list, now) {
     var t = md(now);
     for (var i = 0; i < (list || []).length; i++) {
       var b = list[i], a = parseMD(b.start), z = parseMD(b.end);
-      if (!a || !z) continue;
+      if (!a || !z || !b.text) continue;
       if (a <= z ? (t >= a && t <= z) : (t >= a || t <= z)) return b;
     }
     return null;
   }
+  function excerpt(text, max) {
+    var t = String(text || "").trim(); max = max || 300;
+    if (t.length <= max) return t;
+    var cut = t.slice(0, max), end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "));
+    return (end > 80 ? cut.slice(0, end + 1) : cut.slice(0, cut.lastIndexOf(" "))) + " …";
+  }
+  function reviewHtml(r) {
+    var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; };
+    return '<figure class="quote-col"><blockquote><p>' + esc(excerpt(r.text)) + "</p></blockquote><figcaption>" +
+      esc(r.name) + (r.when ? ", " + esc(r.when) : "") + " · Google review</figcaption></figure>";
+  }
 
   function apply(c) {
-    var now = new Date();
-    // Phone number everywhere
     if (c.phone) {
       document.querySelectorAll("[data-phone-text]").forEach(function (el) { el.textContent = c.phone; });
       document.querySelectorAll("a[data-phone-link]").forEach(function (a) { a.setAttribute("href", tel(c.phone)); });
       document.querySelectorAll("a[data-sms-link]").forEach(function (a) { a.setAttribute("href", tel(c.phone).replace("tel:", "sms:")); });
     }
     if (c.hours) document.querySelectorAll("[data-hours]").forEach(function (el) { el.textContent = c.hours; });
-    if (c.availability_badge) document.querySelectorAll("[data-availability]").forEach(function (el) { el.textContent = c.availability_badge; });
-    if (c.google_review_url) document.querySelectorAll("a[data-review-link]").forEach(function (a) { a.setAttribute("href", c.google_review_url); });
-    // Banner
-    var bar = document.querySelector("[data-banner]"), b = pickBanner(c.banners, now);
-    if (bar) {
-      if (!b) { bar.hidden = true; }
-      else {
-        bar.hidden = false;
-        bar.querySelector("[data-banner-text]").textContent = b.text;
-        var link = bar.querySelector("[data-banner-link]");
-        link.textContent = (b.button_text || "Learn more") + " →";
-        link.setAttribute("href", b.button_link || "contact.html");
-      }
+    if (/^https:\/\//.test(c.google_review_url || "")) document.querySelectorAll("a[data-review-link]").forEach(function (a) { a.setAttribute("href", c.google_review_url); });
+
+    var bar = document.querySelector("[data-banner]"), b = currentBanner(c.banners, new Date());
+    if (bar && b) {
+      bar.querySelector("[data-banner-text]").textContent = b.text;
+      var link = bar.querySelector("[data-banner-link]");
+      link.textContent = b.button_text || "Learn more";
+      link.setAttribute("href", b.button_link ? "/" + String(b.button_link).replace(/^\//, "") : "/contact.html#quote");
+      bar.hidden = false;
     }
-    // Services and reviews
-    document.querySelectorAll("[data-services]").forEach(function (el) {
-      if (!c.services || !c.services.length) return;
-      var city = el.getAttribute("data-city") || "Denver";
-      el.innerHTML = c.services.map(function (s, i) { return serviceCard(s, city, i); }).join("");
-    });
-    if (!google) showReviews(c.reviews);
+
+    var reviews = (c.reviews || []).filter(function (r) { return !r.sample && r.text; }).slice(0, 2);
+    if (reviews.length) document.querySelectorAll("[data-reviews]").forEach(function (el) { el.innerHTML = reviews.map(reviewHtml).join(""); });
   }
 
-  /* ---------- Reviews ---------- */
-  var google = null; // live Google reviews, once /api/reviews answers
-  function showReviews(list) {
-    if (!list || !list.length) return;
-    document.querySelectorAll("[data-reviews]").forEach(function (el) { el.innerHTML = list.map(reviewCard).join(""); });
-    var chip = document.querySelector("[data-sample-chip]");
-    if (chip) chip.hidden = !list.some(function (r) { return r.sample; });
-  }
-  // The newest reviews straight from the Google Business Profile (netlify/functions/reviews.mjs).
-  // If it isn't set up or fails, the reviews from the CMS stay on the page.
-  // Off for now: set to true once the Google API key and Place ID are added in Netlify.
-  var GOOGLE_REVIEWS = false;
-  function loadGoogleReviews() {
-    if (!GOOGLE_REVIEWS || !LIVE || !document.querySelector("[data-reviews]")) return;
-    fetch("/api/reviews")
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (g) {
-        if (!g || !g.reviews || !g.reviews.length) return;
-        google = g;
-        showReviews(g.reviews);
-        var sum = document.querySelector("[data-review-summary]");
-        if (sum && g.rating && g.count) {
-          sum.textContent = Number(g.rating).toFixed(1) + " out of 5 from " + g.count + " Google review" + (g.count === 1 ? "" : "s");
-          sum.hidden = false;
-        }
-      })
-      .catch(function () {});
-  }
-
-  fetch("content/site.json", { cache: "no-cache" })
+  fetch("/content/site.json", { cache: "no-cache" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (c) { if (c) { content = c; apply(c); } })
     .catch(function () {});
-  loadGoogleReviews();
 
-  /* ---------- Mobile menu ---------- */
+  /* ---------- phone menu (disclosure) ---------- */
   var toggle = document.querySelector("[data-menu-toggle]"), menu = document.getElementById("mobile-menu");
-  function closeMenu() { if (!menu) return; menu.hidden = true; toggle.setAttribute("aria-expanded", "false"); }
   if (toggle && menu) {
-    toggle.addEventListener("click", function () {
-      var open = menu.hidden;
-      menu.hidden = !open;
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.hidden = false;
+    menu.hidden = true;
+    var setOpen = function (open) { menu.hidden = !open; toggle.setAttribute("aria-expanded", open ? "true" : "false"); };
+    toggle.addEventListener("click", function () { setOpen(menu.hidden); });
+    menu.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !menu.hidden) { setOpen(false); toggle.focus(); }
     });
-    menu.querySelectorAll("a").forEach(function (a) { a.addEventListener("click", closeMenu); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
   }
 
-  /* ---------- Quote dialog ---------- */
-  var dlg = document.getElementById("quote-dialog");
-  document.querySelectorAll("[data-quote]").forEach(function (a) {
-    a.addEventListener("click", function (e) {
-      if (!dlg || typeof dlg.showModal !== "function") return; // falls back to the link
-      e.preventDefault(); closeMenu();
-      var svc = a.getAttribute("data-quote"), sel = dlg.querySelector("select[name='service_needed']");
-      if (svc && sel) { sel.value = svc; sel.dispatchEvent(new Event("change")); }
-      dlg.showModal();
+  /* ---------- quote forms ---------- */
+  var MESSAGES = {
+    full_name: "Enter your name.",
+    phone: "Enter a phone number with at least 10 digits.",
+    city: "Choose where the project is, or Somewhere else.",
+    service_needed: "Choose the project type, or Not sure.",
+    email: "Enter a valid email address, or leave it empty."
+  };
+
+  function validate(form) {
+    var invalid = [];
+    form.querySelectorAll("input, select, textarea").forEach(function (el) {
+      if (!el.id || el.type === "hidden" || el.closest(".hp")) return;
+      var v = String(el.value || "").trim(), bad = false;
+      if (el.required && !v) bad = true;
+      if (!bad && el.name === "phone" && v.replace(/\D/g, "").length < 10) bad = true;
+      if (!bad && el.type === "email" && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) bad = true;
+      var msg = document.getElementById(el.id + "-error");
+      if (bad) {
+        el.setAttribute("aria-invalid", "true");
+        if (msg) { msg.textContent = MESSAGES[el.name] || "Check this field."; msg.hidden = false; }
+        invalid.push(el);
+      } else {
+        el.removeAttribute("aria-invalid");
+        if (msg) { msg.textContent = ""; msg.hidden = true; }
+      }
     });
-  });
-  if (dlg) {
-    dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
-    dlg.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", function () { dlg.close(); }); });
+    return invalid;
   }
 
-  /* ---------- Forms ---------- */
+  function serviceSlug(form) {
+    var sel = form.querySelector("select[name='service_needed']");
+    var opt = sel && sel.options[sel.selectedIndex];
+    return (opt && opt.getAttribute("data-slug")) || "unknown";
+  }
+
   document.querySelectorAll("form[data-lead-form]").forEach(function (form) {
+    form.noValidate = true; // JS shows its own inline errors; without JS the browser validates
+    var wrap = form.closest("[data-lead]");
+    var success = wrap.querySelector("[data-form-success]");
+    var errorBox = form.querySelector("[data-form-error]");
+    var btn = form.querySelector("button[type='submit']");
+    var label = btn.textContent;
+    var formId = form.getAttribute("data-form-id") || form.getAttribute("name");
+    var started = false, sending = false;
+
     var sel = form.querySelector("select[name='service_needed']"), note = form.querySelector("[data-price-note]");
-    function sync() {
+    function syncNote() {
       if (!sel || !note) return;
-      var v = sel.value;
-      note.hidden = !(v === "Sprinkler repair" || v === "New sprinkler system");
-      note.textContent = v === "Sprinkler repair"
-        ? "Repair visits start with a $75 diagnostic. It's waived if you have us do the repair."
-        : "Estimates for new sprinkler systems are free.";
+      var slug = serviceSlug(form);
+      note.hidden = !(slug === "repair" || slug === "installation");
+      // The wording lives on the element, which the build renders only once the facts are confirmed.
+      note.textContent = note.getAttribute(slug === "repair" ? "data-note-repair" : "data-note-installation") || "";
     }
-    if (sel) { sel.addEventListener("change", sync); sync(); }
+    if (sel) { sel.addEventListener("change", syncNote); syncNote(); }
+
+    function start() {
+      if (started) return;
+      started = true;
+      track("quote_start", { form_id: formId, page_type: PAGE_TYPE });
+    }
+    form.addEventListener("focusin", start);
+    form.addEventListener("input", function (e) {
+      if (e.target.getAttribute("aria-invalid") === "true") validate(form);
+    });
+
+    function finish(state) {
+      sending = false;
+      if (state === "sent" || state === "preview") {
+        form.hidden = true;
+        success.hidden = false;
+        var title = success.querySelector(".lead__success-title"), preview = success.querySelector("[data-preview-note]");
+        title.hidden = state === "preview";
+        preview.hidden = state !== "preview";
+        success.focus();
+      } else {
+        btn.disabled = false;
+        btn.textContent = label;
+        errorBox.hidden = false;
+      }
+    }
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      if (!form.reportValidity()) return;
-      var btn = form.querySelector("button[type='submit']"), label = btn.textContent;
-      var err = form.querySelector("[data-form-error]");
-      btn.disabled = true; btn.textContent = "Sending…"; if (err) err.hidden = true;
-      var data = new FormData(form), body = new URLSearchParams(data).toString();
-      function done(ok, preview) {
-        var box = form.parentElement.querySelector("[data-form-success]");
-        if (ok) {
-          form.hidden = true; box.hidden = false;
-          if (preview) box.querySelector("[data-preview-note]").hidden = false;
-        } else {
-          btn.disabled = false; btn.textContent = label;
-          if (err) err.hidden = false;
-        }
-      }
-      if (!LIVE) { done(true, true); return; }
-      // Optional: copy the lead to GoHighLevel once a webhook URL is set in the CMS
-      var hook = content && content.ghl_webhook_url;
-      if (hook) {
-        var payload = new URLSearchParams(data); payload.delete("form-name"); payload.delete("company");
-        payload.append("source", location.href);
-        fetch(hook, { method: "POST", mode: "no-cors", body: payload }).catch(function () {});
-      }
-      fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body })
-        .then(function (r) { done(r.ok, false); })
-        .catch(function () { done(false, false); });
+      if (sending) return;
+      errorBox.hidden = true;
+      var invalid = validate(form);
+      if (invalid.length) { invalid[0].focus(); return; }
+
+      sending = true;
+      btn.disabled = true;
+      btn.textContent = "Sending…";
+
+      if (!LIVE) { finish("preview"); return; } // previews and local copies never send
+
+      var data = new FormData(form);
+      fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(data).toString() })
+        .then(function (r) {
+          if (!r.ok) { finish("failed"); return; }
+          finish("sent");
+          track("generate_lead", { form_id: formId, service: serviceSlug(form), page_type: PAGE_TYPE });
+          // Optional copy to GoHighLevel once a webhook URL is set in the CMS. Sent once, after the
+          // site accepted the request; no-cors means its receipt cannot be confirmed from here.
+          var hook = content && content.ghl_webhook_url;
+          if (/^https:\/\//.test(hook || "")) {
+            var payload = new URLSearchParams(data);
+            payload.delete("form-name"); payload.delete("company");
+            payload.append("source", location.pathname);
+            fetch(hook, { method: "POST", mode: "no-cors", body: payload }).catch(function () {});
+          }
+        })
+        .catch(function () { finish("failed"); });
     });
   });
 
-  /* ---------- Before/after sliders ---------- */
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  document.querySelectorAll("[data-compare]").forEach(function (el) {
-    var input = el.querySelector("input[type=range]"), touched = false;
-    function set(v) { el.style.setProperty("--pos", v + "%"); }
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- scroll-entry reveals (CSS hides only under .js without reduced motion) ---------- */
+  var revealEls = document.querySelectorAll("[data-reveal]");
+  if (!reduce && "IntersectionObserver" in window) {
+    var revealer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); revealer.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    revealEls.forEach(function (el) { revealer.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add("is-in"); });
+  }
+
+  /* ---------- before/after comparisons ----------
+     The range input (visually hidden) gives keyboard control; pointer events give mouse and touch
+     dragging anywhere on the photo. touch-action: pan-y keeps vertical page scrolling on phones. */
+  document.querySelectorAll("[data-compare]").forEach(function (el, index) {
+    var input = el.querySelector("input[type=range]"), touched = false, dragging = false;
+    function set(v) {
+      v = Math.max(0, Math.min(100, Math.round(v)));
+      el.style.setProperty("--pos", v + "%");
+      input.value = v;
+      input.setAttribute("aria-valuetext", v + "% before, " + (100 - v) + "% after");
+    }
+    function fromPointer(e) { var r = el.getBoundingClientRect(); set(((e.clientX - r.left) / r.width) * 100); }
     input.addEventListener("input", function () { touched = true; set(input.value); });
+    el.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      touched = dragging = true;
+      el.classList.add("is-dragging");
+      if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+      if (e.pointerType !== "touch") fromPointer(e); // on touch, follow the horizontal drag only
+      input.focus({ preventScroll: true });
+    });
+    el.addEventListener("pointermove", function (e) { if (dragging) fromPointer(e); });
+    function stop() { dragging = false; el.classList.remove("is-dragging"); }
+    el.addEventListener("pointerup", stop);
+    el.addEventListener("pointercancel", stop);
+
     if (reduce || !("IntersectionObserver" in window)) return;
-    // One gentle sweep the first time it scrolls into view, so visitors see it moves
+    // One gentle sweep the first time it scrolls into view, so visitors see that it moves.
     var io = new IntersectionObserver(function (entries) {
       if (!entries[0].isIntersecting) return;
       io.disconnect();
-      var start = null, keys = [50, 22, 78, 50], dur = 2200;
+      var start = null, keys = [50, 28, 72, 50], dur = 2000;
       function step(t) {
         if (touched) return;
         if (start === null) start = t;
-        var p = Math.min(1, (t - start) / dur), seg = Math.min(2, Math.floor(p * 3)), lp = p * 3 - seg;
-        var ease = lp < 0.5 ? 2 * lp * lp : 1 - Math.pow(-2 * lp + 2, 2) / 2;
-        var v = keys[seg] + (keys[seg + 1] - keys[seg]) * ease;
-        set(v); input.value = Math.round(v);
+        var p = Math.min(1, (t - start) / dur), seg = p * (keys.length - 1), i = Math.min(keys.length - 2, Math.floor(seg)), f = seg - i;
+        var ease = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+        set(keys[i] + (keys[i + 1] - keys[i]) * ease);
         if (p < 1) requestAnimationFrame(step);
       }
-      setTimeout(function () { requestAnimationFrame(step); }, 250 + Array.prototype.indexOf.call(document.querySelectorAll("[data-compare]"), el) * 180);
+      setTimeout(function () { requestAnimationFrame(step); }, 300 + index * 160);
     }, { threshold: 0.5 });
     io.observe(el);
   });

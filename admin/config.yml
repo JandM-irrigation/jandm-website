@@ -13,7 +13,7 @@ backend:
 
 site_url: https://jmirrigationco.com
 display_url: https://jmirrigationco.com
-logo_url: https://jmirrigationco.com/favicon.svg
+logo_url: https://jmirrigationco.com/images/brand/jm-official-logo-168.webp
 media_folder: images/uploads
 public_folder: /images/uploads
 
@@ -30,36 +30,24 @@ collections:
         fields:
           - { label: "Phone number", name: phone, widget: string, hint: "Shown everywhere on the site, e.g. 303-549-0712" }
           - { label: "Hours", name: hours, widget: string }
-          - { label: "Hero availability badge", name: availability_badge, widget: string, hint: "Keep it accurate, e.g. Open Mon–Sat, 7am–5pm · Call or text" }
           - { label: "Google review link", name: google_review_url, widget: string, hint: "Link for the Leave Us a Google Review button" }
           - { label: "GoHighLevel webhook URL", name: ghl_webhook_url, widget: string, required: false, hint: "Optional. When set, every quote request is also copied to GoHighLevel." }
           - label: "Promotional banners"
             name: banners
             widget: list
             summary: "{{fields.start}} to {{fields.end}}: {{fields.text}}"
-            hint: "The orange bar at the top. Each banner shows between its start and end dates (MM-DD), every year."
+            hint: "The bar at the top of every page. Each banner shows between its start and end dates (MM-DD), every year."
             fields:
               - { label: "Banner text", name: text, widget: text }
               - { label: "Button text", name: button_text, widget: string }
               - { label: "Button link", name: button_link, widget: string, hint: "A page like sprinkler-blowouts.html or contact.html" }
               - { label: "Start (MM-DD)", name: start, widget: string, pattern: ['^\d{2}-\d{2}$', "Use MM-DD, e.g. 09-01"] }
               - { label: "End (MM-DD)", name: end, widget: string, pattern: ['^\d{2}-\d{2}$', "Use MM-DD, e.g. 11-15"] }
-          - label: "Services"
-            name: services
-            widget: list
-            summary: "{{fields.name}}"
-            hint: "The first service shows as the large card. Headers read '<name> in <city>'."
-            fields:
-              - { label: "Service name", name: name, widget: string }
-              - { label: "Page link", name: link, widget: string, hint: "e.g. sprinkler-repair.html (use contact.html if there's no page)" }
-              - { label: "Short description", name: summary, widget: text }
-              - { label: "Photo", name: photo, widget: image, choose_url: true }
-              - { label: "Photo description (alt text)", name: photo_alt, widget: string }
           - label: "Reviews"
             name: reviews
             widget: list
             summary: "{{fields.name}} ({{fields.rating}}★)"
-            hint: "Paste real Google reviews word for word. Turn off 'Sample' on real ones; the 'Sample reviews' label disappears once none are samples. When live Google reviews are connected, these show only if Google can't be reached."
+            hint: "Paste real Google reviews word for word. The first two that are not marked Sample show on the home page (long reviews are shortened to an excerpt)."
             fields:
               - { label: "Name", name: name, widget: string, hint: "First name and last initial" }
               - { label: "City", name: location, widget: string, required: false, hint: "Leave empty if the review doesn't say" }

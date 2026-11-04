@@ -1,6 +1,15 @@
 [build]
   publish = "."
 
+# Production has no build step: the committed HTML is published as is.
+# Deploy previews and branch deploys are stamped noindex (meta tag and X-Robots-Tag header) so a
+# hosted preview cannot be indexed. See tools/mark-noindex.mjs.
+[context.deploy-preview]
+  command = "node tools/mark-noindex.mjs"
+
+[context.branch-deploy]
+  command = "node tools/mark-noindex.mjs"
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -13,7 +22,17 @@
     Cache-Control = "public, max-age=31536000"
 
 [[headers]]
+  for = "/images/brand/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
   for = "/images/work/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/images/projects/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000"
 
@@ -22,7 +41,19 @@
   [headers.values]
     Cache-Control = "no-cache"
 
-# The site publishes from the repository root, so keep the function source out of public view
+# The site publishes from the repository root, so keep the function source and build tools out of public view
+[[redirects]]
+  from = "/tools/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/netlify/*"
   to = "/404.html"

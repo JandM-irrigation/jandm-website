@@ -6,3 +6,16 @@ Edit phone, banners, services and reviews at https://jmirrigationco.com/admin
 
 © 2026 J/M Irrigation. All rights reserved.
 Website designed by MOA Solutions. Not licensed for reuse.
+
+## Building and checking (MOA)
+
+The pages are generated from `tools/site-data.mjs`, `tools/build.mjs` and `content/site.json`.
+Edit those, never the HTML alone, then:
+
+    node tools/build.mjs              # public pages (unpublished projects left out)
+    node tools/build.mjs --preview    # local review build in .preview/ (noindex, includes unpublished projects)
+    node tools/check-site.mjs         # URLs, canonicals, sitemap, links, JSON-LD, leaks (add --preview for .preview/)
+    node tools/test-forms.mjs         # form and analytics tests with mocked delivery
+
+Unpublished ranch photos live in `.private/` (git-ignored). Restore them with
+`node tools/extract-brief-assets.mjs <JM-Relaunch-Creative-Production-Brief-2026-11-02.html>`.

@@ -1,0 +1,5 @@
+# Private client material: original photos, manifests and unpublished projects
+.private/
+# Local review build
+.preview/
+node_modules/
