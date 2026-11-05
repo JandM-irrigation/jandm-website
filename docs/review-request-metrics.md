@@ -123,13 +123,10 @@ Windsor.ai exports the Google Business Profile reviews with a review date and st
 
 ## Activation (owner)
 
-1. PR #4 cutover first. `REVIEW_STAFF_KEYS` must contain exactly one entry, `juan:<hash>`
-   (`node tools/review-staff-key.mjs juan`). Any other label is refused.
-2. Merge this PR. Counting and the nightly job start with the production deploy.
-3. Add `REVIEW_REPORT_KEYS` for MOA's read-only access. The report answers 503 until it is set.
-4. Check: Juan makes one real request, then `/api/review-metrics?format=csv` shows
-   `webhook_accepted` = 1 for that day. The next day, Netlify's function log shows one
-   `review_maintenance` line.
+Follow `docs/review-request-cutover.md`. In short: the PR #4 cutover and Test A first. Then set
+`REVIEW_REPORT_KEYS` (secret, Functions, Production) **before** merging this PR, because
+variables take effect at the next deploy. Merge, then run Test B. Counting and the nightly job
+start with that production deploy.
 
 Tests: `node tools/test-review-metrics.mjs`, `node tools/test-review-request.mjs` and `node tools/test-phone-hold.mjs` (all mocked;
 nothing leaves the computer).
