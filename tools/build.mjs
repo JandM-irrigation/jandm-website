@@ -647,6 +647,16 @@ for (const sp of SERVICE_PAGES) {
   const pathName = "/" + sp.file;
   const crumbs = [{ name: "Home", path: "/" }, { name: "Services", path: "/services.html" }, { name: s.name, path: pathName }];
   const projectRef = featured ? featured.serviceRef(sp.key) : "";
+  // The installation page links to the priority markets so visitors and crawlers reach those pages directly.
+  const installAreas = sp.key === "install" ? `<section class="section section--pale" aria-labelledby="install-areas">
+<div class="wrap">
+<h2 id="install-areas">Where J&amp;M installs new systems</h2>
+<p class="intro">New installations are a priority in Castle Rock and the rest of Douglas County, including Parker and Larkspur, and in Colorado Springs. J&amp;M also serves Denver, Aurora, Thornton and Commerce City.</p>
+<ul class="area-links area-links--inline">${CITIES.map((c) => `<li><a href="${c.path}">${esc(c.label)}</a></li>`).join("")}</ul>
+</div>
+</section>
+
+` : "";
   const projectLink = featured ? featured.relatedLink(sp.key) : null;
   const proof = sp.proof ? `<section class="section proof proof--${sp.proof.length}" aria-labelledby="proof-title">
 <div class="wrap">
@@ -687,7 +697,7 @@ ${proof}${gallery}
 
 ${projectRef}
 
-<section class="section" aria-labelledby="faq-title">
+${installAreas}<section class="section" aria-labelledby="faq-title">
 <div class="wrap grid-12 faq-wrap">
 <h2 id="faq-title">Questions we hear a lot</h2>
 ${faqList(sp.faqs)}
@@ -764,10 +774,10 @@ const CITY_PAGES = {
     note: "Have a larger property? Tell us about the project so we can confirm whether it is a fit.",
   },
   "colorado-springs": {
-    title: "Sprinkler Systems & Larger Projects in Colorado Springs, CO | J&M Irrigation",
-    description: "In Colorado Springs, J&M takes on larger projects: new sprinkler systems, sod installation and jobs with several repairs at once. Tell us about your project.",
+    title: "Irrigation System Installation in Colorado Springs, CO | J&M Irrigation",
+    description: "J&M installs new irrigation and sprinkler systems for larger projects in Colorado Springs, plus sod and jobs with several repairs at once. Tell us about your project.",
     eyebrow: "Colorado Springs, Colorado · New installations",
-    h1: "Sprinkler Systems &amp; Larger Projects in Colorado Springs, CO",
+    h1: "Irrigation System Installation for Larger Projects in Colorado Springs, CO",
     lead: "In Colorado Springs, J&amp;M focuses on larger projects: new irrigation systems for new landscapes, larger lots and acreage, sod installation and jobs with several repairs at once. Tell us about the property and we will let you know if it is a fit.",
     note: "Routine single repairs and seasonal visits are not offered in Colorado Springs. Describe the property, the location and the work you have in mind, and we will confirm whether the project is a fit before scheduling.",
     services: [
