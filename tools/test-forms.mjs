@@ -101,7 +101,8 @@ let leads = await events("generate_lead");
 check("accepted: one request sent despite double click", posts.length === 1, `posts=${posts.length}`);
 check("accepted: success message shown, no preview note", s.success && s.title && !s.preview);
 check("accepted: exactly one generate_lead", leads.length === 1, JSON.stringify(leads));
-check("accepted: lead params are the allowlist only", leads.length === 1 && JSON.stringify(Object.keys(leads[0][1]).sort()) === '["form_id","page_type","service"]' && leads[0][1].service === "repair");
+check("accepted: lead params are the allowlist only", leads.length === 1 && JSON.stringify(Object.keys(leads[0][1]).sort()) === '["area","form_id","page_type","project_scope","service"]' && leads[0][1].service === "repair", leads.length ? JSON.stringify(leads[0][1]) : "");
+check("accepted: lead carries project size and area slugs", leads.length === 1 && leads[0][1].project_scope === "acreage" && leads[0][1].area === "castle_rock");
 {
   const sent = new URLSearchParams(posts[0] || "");
   const want = { "form-name": "quote", full_name: NAME, phone: PHONE, email: "testy@example.com", city: "Castle Rock", service_needed: "Sprinkler repair", project_scope: "Acreage or several properties", message: "New system for a 5 acre lot" };
@@ -141,6 +142,21 @@ const clicks = await events("contact_click");
 check("contact_click for phone and text, with placement", clicks.length === 2 && clicks[0][1].contact_method === "phone" && clicks[0][1].placement === "header" && clicks[1][1].contact_method === "sms", JSON.stringify(clicks));
 check("contact click is not a lead", (await events("generate_lead")).length === 0);
 
+// 6b. Optional size left empty: the lead still counts, marked not_given
+mode = "ok"; posts = [];
+await load(`${PROD}/sprinkler-installation.html`); await fill();
+await js("document.querySelector('form[data-lead-form] [name=project_scope]').value = '', true");
+await submit(); await sleep(600);
+leads = await events("generate_lead");
+check("no size given: one generate_lead with project_scope not_given", posts.length === 1 && leads.length === 1 && leads[0][1].project_scope === "not_given", JSON.stringify(leads));
+
+// 6c. Honeypot filled (a bot): Netlify gets the post and discards it; not counted as a lead
+mode = "ok"; posts = [];
+await load(`${PROD}/contact.html`); await fill();
+await js("document.querySelector('form[data-lead-form] [name=company]').value = 'Spam Co', true");
+await submit(); await sleep(600);
+check("honeypot filled: posted for Netlify to discard, no generate_lead", posts.length === 1 && (await events("generate_lead")).length === 0);
+
 // 7. Preview / non-production host never sends
 mode = "ok"; posts = [];
 await load(`http://127.0.0.1:${PORT}/index.html`); await fill(); await submit(); await sleep(400);
@@ -148,6 +164,14 @@ s = await state();
 check("preview host: nothing sent", posts.length === 0);
 check("preview host: preview note shown, no 'received' message", s.success && s.preview && !s.title);
 check("preview host: no analytics loaded or sent", (await js("typeof window.gtag")) === "undefined" && (await js("(window.dataLayer || []).length")) === 0);
+
+// 8. Staff review tool: noindex everywhere, analytics only on the production host, form untouched
+await load(`${PROD}/review.html`);
+check("review.html: noindex, nofollow meta", (await js("(document.querySelector('meta[name=robots]') || {}).content || ''")) === "noindex, nofollow");
+check("review.html: production host configures GA4", await js("(window.dataLayer || []).some(a => a && a[0] === 'config' && a[1] === 'G-NTW0DE5RLP') && !!document.querySelector('script[src*=googletagmanager]')"));
+check("review.html: review-request form still present", await js("!!document.querySelector('#reviewForm #full_name') && !!document.querySelector('#reviewForm #phone')"));
+await load(`http://127.0.0.1:${PORT}/review.html`);
+check("review.html: no analytics on a non-production host", (await js("typeof window.gtag")) === "undefined" && !(await js("!!document.querySelector('script[src*=googletagmanager]')")));
 
 ws.close(); chrome.kill(); server.close(); // the throwaway profile stays in the OS temp folder
 await sleep(500);
