@@ -2,25 +2,27 @@
 
    - Measurement: roll finished days into daily aggregates; delete aggregates older than 13 months.
    - Request-tool state from /api/review-request, deleted once it can no longer change a decision:
-       phone/<keyed hash>   24-hour same-number hold; deleted 48 hours after it was set.
-                            This is the only per-customer value in the store, so it is not kept.
+       phone/v2/<bucket>/…  24-hour same-number holds, in day buckets; a bucket is deleted by key
+                            name once every hold in it is at least 48 hours old (48–72 h after it
+                            was set). Never read-then-delete: see netlify/lib/phone-hold.mjs.
+                            These keyed hashes are the only per-customer value in the store.
        request/<id>         double-tap guard ({ at, staff }); deleted after 7 days.
        rate/<label>/h|d/<n> hourly and daily counters; deleted once two buckets old.
    Each step runs on its own: a failure is logged as a count-free line and the other steps go on.
    Logs carry counts only. */
 import { pruneMetrics, rollUp } from "./review-metrics.mjs";
+import { pruneHolds } from "./phone-hold.mjs";
+import { LIMITS } from "./review-request.mjs";
 
 export const KEEP = { phoneHoldMs: 48 * 3600000, requestIdMs: 7 * 86400000 };
 
 export async function pruneState(store, nowMs, keep = KEEP) {
-  const deleted = { phone: 0, request: 0, rate: 0 };
-  for (const prefix of ["phone/", "request/"]) {
-    const limit = prefix === "phone/" ? keep.phoneHoldMs : keep.requestIdMs;
-    const { blobs } = await store.list({ prefix });
-    for (const { key } of blobs) {
-      const at = (await store.getWithMetadata(key, { type: "json" }))?.data?.at;
-      if (typeof at === "number" && nowMs - at > limit) { await store.delete(key); deleted[prefix.slice(0, -1)] += 1; }
-    }
+  const deleted = { phone: await pruneHolds(store, nowMs, keep.phoneHoldMs, LIMITS.samePhoneHours * 3600000), request: 0, rate: 0 };
+  // Double-tap guards are written once (onlyIfNew) and never refreshed, so read-then-delete is safe.
+  const { blobs: requests } = await store.list({ prefix: "request/" });
+  for (const { key } of requests) {
+    const at = (await store.getWithMetadata(key, { type: "json" }))?.data?.at;
+    if (typeof at === "number" && nowMs - at > keep.requestIdMs) { await store.delete(key); deleted.request += 1; }
   }
   const hour = Math.floor(nowMs / 3600000), day = Math.floor(nowMs / 86400000);
   const { blobs } = await store.list({ prefix: "rate/" });

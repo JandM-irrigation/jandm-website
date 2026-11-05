@@ -29,6 +29,7 @@ export const GROUPS = {
   sent: "webhook_accepted",
   duplicate_request: "duplicate",
   recently_sent: "duplicate",
+  hold_conflict: "duplicate",
   rate_limited: "rate_limited",
   upstream_rejected: "upstream_failure",
   upstream_unreachable: "upstream_failure",

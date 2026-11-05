@@ -27,7 +27,7 @@ Mountain Time. Every night the finished days are rolled into one aggregate per d
 |---|---|
 | `attempts` | Every request from Juan's key, whatever the result. |
 | `webhook_accepted` | GoHighLevel answered 2xx. **The webhook was accepted. This does not mean a text was delivered.** |
-| `duplicate` | Not sent: the same tap was already handled, or that number got a request in the last 24 hours. |
+| `duplicate` | Not sent: the same tap was already handled, that number got a request in the last 24 hours, or a simultaneous request for the number (`hold_conflict`). |
 | `rate_limited` | Not sent: over 20/hour or 60/day, or the limit counter was busy (see Known limitations). |
 | `upstream_failure` | Not sent: GoHighLevel refused the request or could not be reached. |
 | `upstream_unconfirmed` | GoHighLevel did not answer within 10 s. It may or may not have received the request. |
@@ -51,7 +51,7 @@ deploy only:
 | Data | Kept for |
 |---|---|
 | Daily aggregates | **13 months** (back to the same date 13 months earlier), then deleted |
-| Same-number hold (`phone/<keyed hash>`), the only per-customer value | 48 hours (needed for 24) |
+| Same-number holds (`phone/v2/<day bucket>/<keyed hash>`), the only per-customer value | Deleted 48–72 hours after being set: a whole day bucket is deleted once every hold in it is at least 48 hours old (each hold is needed for 24) |
 | Double-tap guard (`request/<id>`, no customer data) | 7 days |
 | Hourly and daily rate counters | Until two buckets old |
 
@@ -109,10 +109,15 @@ Windsor.ai exports the Google Business Profile reviews with a review date and st
   simultaneous taps, 8 were sent and 17 refused, below the 20/hour limit. One person tapping
   cannot realistically trigger this. A refused tap sends nothing and can simply be retried.
   This behaviour is intended and is kept.
-- **Same-number hold cleanup.** Blobs deletes are unconditional. If Juan sends to the same number
-  in the instant the nightly job deletes that number's 48-hour-old hold (2–3 AM), the new hold
-  could be removed, and a second text to that number within 24 hours would then not be blocked.
-  Daily and hourly limits still apply.
+- **Same-number hold cleanup is race-free** (fixed 2026-11-05). Netlify Blobs cannot delete
+  conditionally, so holds are written to day buckets. A request only ever writes the bucket for
+  its own start time, and cleanup deletes a bucket by key name only, once every hold in it is
+  48 hours old. No request writes a bucket that old, so a refreshed hold is never deleted
+  (`netlify/lib/phone-hold.mjs`, `tools/test-phone-hold.mjs`). Holds in the PR #4 format are still
+  honoured, and are cleaned up after 48 hours.
+- **Two taps for the same number in the same instant, across the 09:00 UTC bucket boundary.**
+  Both requests check again after writing. Exactly one sends, or, if each sees the other, neither
+  sends and both get `hold_conflict` ("try again"). It never sends twice. A retry then sends once.
 - The report adds aggregates and markers that have not been rolled up yet. A report pulled while
   the nightly job is running (2–3 AM) can briefly under-count the previous day. Pull it again later.
 
@@ -126,5 +131,5 @@ Windsor.ai exports the Google Business Profile reviews with a review date and st
    `webhook_accepted` = 1 for that day. The next day, Netlify's function log shows one
    `review_maintenance` line.
 
-Tests: `node tools/test-review-metrics.mjs` and `node tools/test-review-request.mjs` (all mocked;
+Tests: `node tools/test-review-metrics.mjs`, `node tools/test-review-request.mjs` and `node tools/test-phone-hold.mjs` (all mocked;
 nothing leaves the computer).

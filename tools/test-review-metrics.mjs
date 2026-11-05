@@ -261,12 +261,12 @@ const metricKeys = (store) => [...store.data.keys()].filter((k) => k.startsWith(
 {
   const h = harness();
   await send(h, { phone: "720-555-0301" });
-  h.advance(30 * 3600000); await send(h, { phone: "720-555-0302" });
+  h.advance(50 * 3600000); await send(h, { phone: "720-555-0302" });
   const blocked = await send(h, { phone: "720-555-0302" });
-  h.advance(20 * 3600000); // first hold is now 50 h old, second 20 h
+  h.advance(22 * 3600000); // first hold is now 72 h old (its whole bucket is over 48 h old), second 22 h
   const d = await pruneState(h.store, h.now());
   const keys = [...h.store.data.keys()];
-  check("state prune: same-number hold deleted after 48 h, the current one kept", blocked.status === 409 && d.phone === 1 && keys.filter((k) => k.startsWith("phone/")).length === 1);
+  check("state prune: a hold bucket is deleted once all of it is 48 h old, the live hold kept", blocked.status === 409 && d.phone === 1 && keys.filter((k) => k.startsWith("phone/")).length === 1);
   const still = await send(h, { phone: "720-555-0302" });
   check("state prune: duplicate protection still holds for the kept hold", still.status === 409 && h.calls.length === 2);
   const hour = Math.floor(h.now() / 3600000), day = Math.floor(h.now() / 86400000);

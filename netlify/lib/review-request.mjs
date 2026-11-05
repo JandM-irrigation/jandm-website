@@ -18,9 +18,10 @@
    Logs carry the staff label, the outcome and the request ID only: never a name or phone number.
    Every request from an authenticated staff key is also counted by day and outcome only
    (netlify/lib/review-metrics.mjs); counting never changes what is sent or answered. */
-import { createHmac } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { authenticateSender, parseKeys } from "./review-auth.mjs";
 import { recordOutcome } from "./review-metrics.mjs";
+import { acquireHold, releaseHold } from "./phone-hold.mjs";
 
 export const ORIGIN = "https://jmirrigationco.com";
 export const LIMITS = { perHour: 20, perDay: 60, samePhoneHours: 24, upstreamTimeoutMs: 10000, maxBodyBytes: 2048 };
@@ -94,13 +95,13 @@ export function createHandler({ env, store, fetchImpl = fetch, now = Date.now, l
       if (!(await increment(store, bucket, max))) return out(429, "rate_limited", {}, staff.label, requestId);
     }
 
-    // 3. One request per phone number per 24 hours. The number is stored only as a keyed hash.
-    const phoneKey = `phone/${createHmac("sha256", webhook).update(phone).digest("hex")}`;
-    const holdMs = limits.samePhoneHours * 3600000;
-    const prior = await store.getWithMetadata(phoneKey, { type: "json" });
-    if (prior && prior.data && t - prior.data.at < holdMs) return out(409, "recently_sent", {}, staff.label, requestId);
-    const hold = await store.setJSON(phoneKey, { at: t }, prior ? { onlyIfMatch: prior.etag } : { onlyIfNew: true });
-    if (!hold.modified) return out(409, "recently_sent", {}, staff.label, requestId);
+    // 3. One request per phone number per 24 hours. The number is stored only as a keyed hash,
+    //    in a day bucket that cleanup can delete safely (netlify/lib/phone-hold.mjs).
+    const phoneHash = createHmac("sha256", webhook).update(phone).digest("hex");
+    const hold = await acquireHold(store, phoneHash, t, limits.samePhoneHours * 3600000, randomUUID());
+    if (hold.status === "recently_sent") return out(409, "recently_sent", {}, staff.label, requestId);
+    if (hold.status === "conflict") return out(409, "hold_conflict", {}, staff.label, requestId);
+    const phoneKey = hold.key;
 
     // 4. Forward to GoHighLevel. Success is reported only on a 2xx answer.
     const abort = new AbortController();
@@ -114,12 +115,12 @@ export function createHandler({ env, store, fetchImpl = fetch, now = Date.now, l
         // GoHighLevel may still have received it: keep the 24-hour hold so a retry cannot text twice.
         return out(504, "upstream_unconfirmed", {}, staff.label, requestId);
       }
-      await store.delete(phoneKey); // no connection was made: nothing was sent, a retry is safe
+      await releaseHold(store, phoneKey); // no connection was made: nothing was sent, a retry is safe
       return out(502, "upstream_unreachable", {}, staff.label, requestId);
     }
     clearTimeout(timer);
     if (!res.ok) {
-      await store.delete(phoneKey);
+      await releaseHold(store, phoneKey);
       return out(502, "upstream_rejected", { upstream_status: res.status }, staff.label, requestId);
     }
     return out(200, "sent", {}, staff.label, requestId);

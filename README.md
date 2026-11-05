@@ -18,6 +18,7 @@ Edit those, never the HTML alone, then:
     node tools/test-forms.mjs         # form and analytics tests with mocked delivery
     node tools/test-review-request.mjs  # 1-Tap Review server function (mocked)
     node tools/test-review-metrics.mjs  # 1-Tap Review counts and report (mocked); see docs/review-request-metrics.md
+    node tools/test-phone-hold.mjs      # same-number hold and its cleanup under concurrency (deterministic)
 
 Unpublished ranch photos live in `.private/` (git-ignored). Restore them with
 `node tools/extract-brief-assets.mjs <JM-Relaunch-Creative-Production-Brief-2026-11-02.html>`.
