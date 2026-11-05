@@ -124,10 +124,17 @@
     return invalid;
   }
 
-  function serviceSlug(form) {
-    var sel = form.querySelector("select[name='service_needed']");
-    var opt = sel && sel.options[sel.selectedIndex];
-    return (opt && opt.getAttribute("data-slug")) || "unknown";
+  function optionSlug(form, name, fallback) {
+    var sel = form.querySelector("select[name='" + name + "']");
+    var opt = sel && sel.selectedIndex > 0 && sel.options[sel.selectedIndex];
+    return (opt && opt.getAttribute("data-slug")) || fallback;
+  }
+  function serviceSlug(form) { return optionSlug(form, "service_needed", "unknown"); }
+  /* The project location as a coarse area name (a city or county option, never an address). */
+  function areaSlug(form) {
+    var sel = form.querySelector("select[name='city']");
+    var v = sel && sel.selectedIndex > 0 ? sel.value : "";
+    return v ? v.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") : "not_given";
   }
 
   document.querySelectorAll("form[data-lead-form]").forEach(function (form) {
@@ -194,7 +201,10 @@
         .then(function (r) {
           if (!r.ok) { finish("failed"); return; }
           finish("sent");
-          track("generate_lead", { form_id: formId, service: serviceSlug(form), page_type: PAGE_TYPE });
+          // A filled honeypot means a bot: Netlify accepts the post but discards it, so it is not a lead
+          // and is neither counted nor copied to GoHighLevel.
+          if (data.get("company")) return;
+          track("generate_lead", { form_id: formId, service: serviceSlug(form), project_scope: optionSlug(form, "project_scope", "not_given"), area: areaSlug(form), page_type: PAGE_TYPE });
           // Optional copy to GoHighLevel once a webhook URL is set in the CMS. Sent once, after the
           // site accepted the request; no-cors means its receipt cannot be confirmed from here.
           var hook = content && content.ghl_webhook_url;

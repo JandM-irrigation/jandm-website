@@ -16,6 +16,13 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# The staff review-request tool is not a public page. robots.txt must not block it, or crawlers
+# could not read this header.
+[[headers]]
+  for = "/review.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
 [[headers]]
   for = "/assets/*"
   [headers.values]
