@@ -14,8 +14,11 @@
                          Create entries with: node tools/review-staff-key.mjs <label>
    Either missing or invalid: every request is refused (503) and nothing is sent.
 
-   Logs carry the staff label, the outcome and the request ID only: never a name or phone number. */
+   Logs carry the staff label, the outcome and the request ID only: never a name or phone number.
+   Every request from an authenticated staff key is also counted by day and outcome only
+   (netlify/lib/review-metrics.mjs); counting never changes what is sent or answered. */
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { recordOutcome } from "./review-metrics.mjs";
 
 export const ORIGIN = "https://jmirrigationco.com";
 export const LIMITS = { perHour: 20, perDay: 60, samePhoneHours: 24, upstreamTimeoutMs: 10000, maxBodyBytes: 2048 };
@@ -31,6 +34,13 @@ export function parseStaffKeys(raw) {
     return /^[a-z0-9_-]{1,32}$/.test(label || "") && /^[a-f0-9]{64}$/.test(hash || "") ? { label, hash: Buffer.from(hash, "hex") } : null;
   });
   return entries.length && entries.every(Boolean) ? entries : null;
+}
+
+// The listed entry whose hash matches the request's Bearer key (constant-time compare), or null.
+export function authenticate(request, keys) {
+  const token = (request.headers.get("authorization") || "").match(/^Bearer ([A-Za-z0-9_-]{32,128})$/)?.[1];
+  const presented = token ? Buffer.from(sha256(token), "hex") : null;
+  return (presented && keys.find((k) => timingSafeEqual(k.hash, presented))) || null;
 }
 
 // US numbers only (the business and its customers are in Colorado). Returns +1XXXXXXXXXX or null.
@@ -56,8 +66,9 @@ const reply = (status, body) => new Response(JSON.stringify(body), {
 export function createHandler({ env, store, fetchImpl = fetch, now = Date.now, log = (r) => console.log(JSON.stringify(r)), limits = LIMITS }) {
   return async function handle(request) {
     const started = now();
-    const out = (status, code, extra = {}, staff = null, requestId = null) => {
+    const out = async (status, code, extra = {}, staff = null, requestId = null) => {
       log({ event: "review_request", outcome: code, status, staff, request_id: requestId, ms: now() - started });
+      if (staff) await recordOutcome(store, code, started, log);
       return reply(status, { ok: status === 200, code, ...extra });
     };
 
@@ -70,9 +81,7 @@ export function createHandler({ env, store, fetchImpl = fetch, now = Date.now, l
     if (!WEBHOOK.test(webhook) || !keys) return out(503, "not_configured");
 
     // Authentication and authorization: a listed staff key, compared by hash in constant time.
-    const token = (request.headers.get("authorization") || "").match(/^Bearer ([A-Za-z0-9_-]{32,128})$/)?.[1];
-    const presented = token ? Buffer.from(sha256(token), "hex") : null;
-    const staff = presented && keys.find((k) => timingSafeEqual(k.hash, presented));
+    const staff = authenticate(request, keys);
     if (!staff) return out(401, "unauthorized");
 
     // Input validation

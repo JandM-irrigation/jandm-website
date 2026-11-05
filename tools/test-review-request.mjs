@@ -11,27 +11,13 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createHandler, LIMITS } from "../netlify/lib/review-request.mjs";
+import { memoryStore } from "./blobs-double.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const results = [];
 const check = (name, ok, detail = "") => { results.push(ok); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail && !ok ? "  " + detail : ""}`); };
 
-// ---------- test doubles ----------
-function memoryStore() {
-  const data = new Map(); let n = 0;
-  return {
-    data,
-    async getWithMetadata(key) { const e = data.get(key); return e ? { data: JSON.parse(e.value), etag: e.etag, metadata: {} } : null; },
-    async setJSON(key, value, opts = {}) {
-      await new Promise((r) => setImmediate(r)); // let concurrent callers interleave
-      const e = data.get(key);
-      if (opts.onlyIfNew && e) return { modified: false };
-      if (opts.onlyIfMatch && (!e || e.etag !== opts.onlyIfMatch)) return { modified: false };
-      const etag = `"${++n}"`; data.set(key, { value: JSON.stringify(value), etag }); return { modified: true, etag };
-    },
-    async delete(key) { data.delete(key); },
-  };
-}
+// ---------- test doubles (the Blobs store double is in tools/blobs-double.mjs) ----------
 const WEBHOOK = "https://services.leadconnectorhq.com/hooks/TESTlocation/webhook-trigger/TEST-0000";
 const KEY_A = "a".repeat(20) + "Staff_Key-A" + "b".repeat(12);
 const KEY_B = "c".repeat(43);
