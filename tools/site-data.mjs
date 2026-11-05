@@ -85,8 +85,15 @@ export const CITIES = [
   { key: "commerce-city", name: "Commerce City", path: "/sprinkler-services-commerce-city.html", label: "Commerce City" },
 ];
 
-// Approximate project size, asked on the estimate forms to qualify larger installations.
-export const SCOPES = ["A repair or small job", "A typical home yard", "A large lot (about half an acre or more)", "Acreage or several properties", "Not sure yet"];
+// Approximate project size, asked on the estimate forms to qualify larger installations. The slug is
+// sent with the generate_lead analytics event so larger-property inquiries can be counted separately.
+export const SCOPES = [
+  { label: "A repair or small job", slug: "small_job" },
+  { label: "A typical home yard", slug: "home_yard" },
+  { label: "A large lot (about half an acre or more)", slug: "large_lot" },
+  { label: "Acreage or several properties", slug: "acreage" },
+  { label: "Not sure yet", slug: "not_sure" },
+];
 
 // Featured projects (the brief's reusable showcase shape) are kept in .private/featured-project.mjs,
 // which git ignores, until the owner records publication permission. See tools/build.mjs.

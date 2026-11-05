@@ -133,7 +133,7 @@ function leadForm({ name = "quote", idPrefix = "q", selected = "", cityName = ""
     field(`${p}-email`, "Email <span class=\"optional\">(optional)</span>", `<input id="${p}-email" name="email" type="email" autocomplete="email" aria-describedby="${p}-email-error">`),
     field(`${p}-city`, "Project location", `<select id="${p}-city" name="city" required aria-describedby="${p}-city-error"><option value="">Choose the city or area</option>${opts(LOCATIONS, cityName)}</select>`),
     field(`${p}-service`, "Project type", `<select id="${p}-service" name="service_needed" required aria-describedby="${p}-service-error"><option value="">Choose a project type</option>${serviceOptions(selected)}</select>`),
-    field(`${p}-scope`, "Approximate size <span class=\"optional\">(optional)</span>", `<select id="${p}-scope" name="project_scope" aria-describedby="${p}-scope-error"><option value="">Choose the closest size</option>${opts(SCOPES)}</select>`),
+    field(`${p}-scope`, "Approximate size <span class=\"optional\">(optional)</span>", `<select id="${p}-scope" name="project_scope" aria-describedby="${p}-scope-error"><option value="">Choose the closest size</option>${SCOPES.map((s) => `<option data-slug="${s.slug}">${esc(s.label)}</option>`).join("")}</select>`),
     field(`${p}-message`, "Tell us more <span class=\"optional\">(optional)</span>", `<textarea id="${p}-message" name="message" rows="4" aria-describedby="${p}-message-error"></textarea>`),
   ];
   const more = extended ? [

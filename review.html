@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NTW0DE5RLP"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-NTW0DE5RLP');
-</script>
   <meta charset="UTF-8">
+  <!-- Staff tool, not a public page: keep it out of search results. -->
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Google Analytics loads only on the production host, as on the rest of the site. -->
+  <script>
+  if (location.hostname === "jmirrigationco.com") {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag("js", new Date());
+    gtag("config", "G-NTW0DE5RLP");
+    var ga = document.createElement("script"); ga.async = true; ga.src = "https://www.googletagmanager.com/gtag/js?id=G-NTW0DE5RLP"; document.head.appendChild(ga);
+  }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>J&M Irrigation - 1-Tap Review</title>
   <style>
