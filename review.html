@@ -116,6 +116,7 @@
           return res.json().catch(function () { return {}; }).then(function (body) {
             requestId = null; // definite answer: the next tap is a new request
             if (res.ok && body.ok) { show("success", "✓ Sent! Review request incoming."); form.reset(); return; }
+            if (res.status === 403 && body.code === "sender_not_allowed") { store(null); ready(); show("error", "Not sent: only the owner's phone can send review requests."); return; }
             if (res.status === 401) { store(null); ready(); show("error", "Not sent: this phone's staff access is no longer valid. Ask the owner for a new staff link."); return; }
             show("error", MESSAGES[body.code] || "Not sent. Try again.");
           });
