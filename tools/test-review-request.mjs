@@ -196,6 +196,23 @@ for (const [label, env] of [["no settings", {}], ["webhook not GoHighLevel", { .
   check("no GoHighLevel webhook URL in any published top-level file", !/services\.leadconnectorhq\.com\/hooks\/[A-Za-z0-9]/.test(tracked));
 }
 
+// ---------- 7b. deployment configuration ----------
+{
+  const nodeVersion = fs.readFileSync(path.join(ROOT, ".node-version"), "utf8").trim();
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const lock = JSON.parse(fs.readFileSync(path.join(ROOT, "package-lock.json"), "utf8"));
+  const blobs = lock.packages["node_modules/@netlify/blobs"];
+  const minimum = blobs?.engines?.node || "";
+  check("Netlify build and functions runtime pinned to Node 22 (.node-version)", nodeVersion === "22");
+  check("engines >=22.12.0 in package.json and lockfile, matching @netlify/blobs 11.1.2", pkg.engines?.node === ">=22.12.0" && lock.packages[""].engines?.node === ">=22.12.0" && blobs?.version === "11.1.2" && minimum === ">=22.12.0", minimum);
+  check("pinned major 22 resolves to a release that meets the package minimum", minimum.startsWith(`>=${nodeVersion}.`));
+  const toml = fs.readFileSync(path.join(ROOT, "netlify.toml"), "utf8").replace(/\r\n/g, "\n");
+  for (const from of ["/tools/*", "/netlify/*", "/docs/*", "/README.md", "/package.json", "/package-lock.json", "/.node-version", "/node_modules/*"]) {
+    check(`not published: ${from} answers 404`, toml.includes(`from = "${from}"\n  to = "/404.html"\n  status = 404\n  force = true`));
+  }
+  check("production has no build command (committed HTML published as is)", !/^\[build\]\n(?:(?!\n\[).)*command\s*=/ms.test(toml));
+}
+
 // ---------- 8. review.html in a browser ----------
 const CHROME = process.env.CHROME_PATH || ["C:/Program Files/Google/Chrome/Application/chrome.exe", "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", "/usr/bin/google-chrome"].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log("SKIP  browser checks: no Chrome or Edge found"); }

@@ -62,6 +62,12 @@
   force = true
 
 [[redirects]]
+  from = "/docs/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
   from = "/netlify/*"
   to = "/404.html"
   status = 404
@@ -76,6 +82,12 @@
 
 [[redirects]]
   from = "/package-lock.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.node-version"
   to = "/404.html"
   status = 404
   force = true
