@@ -1,0 +1,8 @@
+{
+  "name": "jandm-website",
+  "private": true,
+  "description": "Static site; this file only declares the Netlify Functions dependency. No build step.",
+  "dependencies": {
+    "@netlify/blobs": "11.1.2"
+  }
+}

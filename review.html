@@ -17,72 +17,117 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f4f6f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
     .card { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-    h2 { color: #1a252c; margin-top: 0; font-size: 24px; }
-    p { color: #627d98; font-size: 14px; margin-bottom: 24px; }
+    h1 { color: #1a252c; margin-top: 0; font-size: 24px; }
+    p { color: #486581; font-size: 14px; margin-bottom: 24px; }
     .input-group { text-align: left; margin-bottom: 16px; }
     label { display: block; font-size: 12px; font-weight: bold; color: #486581; text-transform: uppercase; margin-bottom: 6px; }
     input { width: 100%; padding: 14px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; }
     input:focus { border-color: #0284c7; }
-    button { width: 100%; padding: 16px; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #0284c7; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-    button:active { background-color: #0369a1; }
+    button { width: 100%; padding: 16px; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #0369a1; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+    button:active { background-color: #075985; }
     .status-msg { margin-top: 15px; font-size: 14px; display: none; }
-    .success { color: #16a34a; }
+    .success { color: #15803d; }
+    .error { color: #b91c1c; }
+    .setup { color: #1a252c; background: #fef3c7; border-radius: 8px; padding: 12px; font-size: 14px; text-align: left; }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h2>1-Tap Review Tool</h2>
+    <h1>1-Tap Review Tool</h1>
     <p>Send a quick SMS review request to the customer.</p>
 
     <form id="reviewForm">
       <div class="input-group">
         <label for="full_name">Customer Full Name</label>
-        <input type="text" id="full_name" required placeholder="e.g. John Smith" />
+        <input type="text" id="full_name" name="full_name" required maxlength="80" autocomplete="off" placeholder="e.g. John Smith" />
       </div>
 
       <div class="input-group">
         <label for="phone">Customer Cell Phone</label>
-        <input type="tel" id="phone" required placeholder="e.g. 5125550199" />
+        <input type="tel" id="phone" name="phone" required maxlength="20" autocomplete="off" inputmode="tel" placeholder="e.g. 7205550199" />
       </div>
 
       <button type="submit" id="submitBtn">Send Review Request</button>
     </form>
 
-    <div id="status" class="status-msg success">✓ Sent! Review request incoming.</div>
+    <div id="status" class="status-msg" role="status" aria-live="polite"></div>
+    <p id="setup" class="setup" hidden>This phone is not set up to send review requests. Open your personal staff link from the owner once on this phone, then use this page.</p>
   </div>
 
   <script>
-    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      const status = document.getElementById('status');
-      
-      btn.innerText = "Sending...";
-      btn.disabled = true;
+    /* Review requests go through /api/review-request, which checks this phone's staff key and holds the
+       GoHighLevel webhook. The key arrives once in the staff link (#key=…), is kept on this phone only,
+       and is removed from the address bar. Success is shown only when the server confirms it was sent. */
+    (function () {
+      var KEY_NAME = "jm-review-staff-key";
+      var form = document.getElementById("reviewForm");
+      var btn = document.getElementById("submitBtn");
+      var status = document.getElementById("status");
+      var setup = document.getElementById("setup");
+      var label = btn.textContent;
+      var requestId = null; // one ID per review request, kept until the server gives a definite answer
 
-      const payload = {
-        full_name: document.getElementById('full_name').value,
-        phone: document.getElementById('phone').value
+      function store(k) { try { if (k) localStorage.setItem(KEY_NAME, k); else localStorage.removeItem(KEY_NAME); } catch (e) {} }
+      function stored() { try { return localStorage.getItem(KEY_NAME); } catch (e) { return null; } }
+      function ready() { var ok = !!stored(); form.hidden = !ok; setup.hidden = ok; return ok; }
+      function readLink() {
+        var fromLink = /(?:^#|&)key=([A-Za-z0-9_-]{32,128})(?:&|$)/.exec(location.hash);
+        if (fromLink) { store(fromLink[1]); history.replaceState(null, "", location.pathname + location.search); status.style.display = "none"; }
+        ready();
+      }
+      readLink();
+      window.addEventListener("hashchange", readLink); // a staff link opened in a tab already showing this page
+
+      function show(kind, text) {
+        status.className = "status-msg " + kind;
+        status.textContent = text;
+        status.style.display = "block";
+      }
+      function newId() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        var a = new Uint8Array(16); crypto.getRandomValues(a);
+        return Array.prototype.map.call(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      }
+      var MESSAGES = {
+        invalid_input: "Check the name and the 10-digit cell number, then try again.",
+        recently_sent: "Not sent: this number already got a review request in the last 24 hours.",
+        duplicate_request: "Already handled. Check GoHighLevel before sending again.",
+        rate_limited: "Not sent: too many requests from this phone. Try again later.",
+        upstream_unconfirmed: "Not confirmed: GoHighLevel did not answer in time. Check GoHighLevel before trying again.",
+        upstream_rejected: "Not sent: GoHighLevel refused the request. Try again in a few minutes.",
+        upstream_unreachable: "Not sent: GoHighLevel could not be reached. Try again in a few minutes.",
+        not_configured: "Not sent: the review tool is not set up yet. Tell the owner."
       };
 
-      try {
-        await fetch("https://services.leadconnectorhq.com/hooks/ccw86eAQJ9Ic1KCOF1e7/webhook-trigger/ddd198db-141c-4a66-948d-b27ea9add753", {
+      form.addEventListener("input", function () { requestId = null; }); // different details: a new request
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (btn.disabled || !ready()) return;
+        if (!requestId) requestId = newId();
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        status.style.display = "none";
+        fetch("/api/review-request", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + stored() },
+          body: JSON.stringify({ request_id: requestId, full_name: form.full_name.value, phone: form.phone.value })
+        }).then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (body) {
+            requestId = null; // definite answer: the next tap is a new request
+            if (res.ok && body.ok) { show("success", "✓ Sent! Review request incoming."); form.reset(); return; }
+            if (res.status === 401) { store(null); ready(); show("error", "Not sent: this phone's staff access is no longer valid. Ask the owner for a new staff link."); return; }
+            show("error", MESSAGES[body.code] || "Not sent. Try again.");
+          });
+        }).catch(function () {
+          // No answer: the same request ID is reused on the next tap, so it can never be sent twice.
+          show("error", "Not sent: no connection. Check the signal and tap Send again.");
+        }).then(function () {
+          btn.disabled = false;
+          btn.textContent = label;
         });
-
-        status.style.display = "block";
-        document.getElementById('reviewForm').reset();
-      } catch (err) {
-        alert("Error sending request. Please check connection.");
-      } finally {
-        btn.innerText = "Send Review Request";
-        btn.disabled = false;
-        setTimeout(() => { status.style.display = "none"; }, 4000);
-      }
-    });
+      });
+    })();
   </script>
 
 </body>
