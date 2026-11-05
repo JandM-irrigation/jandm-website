@@ -11,30 +11,16 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createHandler, LIMITS } from "../netlify/lib/review-request.mjs";
+import { memoryStore } from "./blobs-double.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const results = [];
 const check = (name, ok, detail = "") => { results.push(ok); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail && !ok ? "  " + detail : ""}`); };
 
-// ---------- test doubles ----------
-function memoryStore() {
-  const data = new Map(); let n = 0;
-  return {
-    data,
-    async getWithMetadata(key) { const e = data.get(key); return e ? { data: JSON.parse(e.value), etag: e.etag, metadata: {} } : null; },
-    async setJSON(key, value, opts = {}) {
-      await new Promise((r) => setImmediate(r)); // let concurrent callers interleave
-      const e = data.get(key);
-      if (opts.onlyIfNew && e) return { modified: false };
-      if (opts.onlyIfMatch && (!e || e.etag !== opts.onlyIfMatch)) return { modified: false };
-      const etag = `"${++n}"`; data.set(key, { value: JSON.stringify(value), etag }); return { modified: true, etag };
-    },
-    async delete(key) { data.delete(key); },
-  };
-}
+// ---------- test doubles (the Blobs store double is in tools/blobs-double.mjs) ----------
 const WEBHOOK = "https://services.leadconnectorhq.com/hooks/TESTlocation/webhook-trigger/TEST-0000";
 const KEY_A = "a".repeat(20) + "Staff_Key-A" + "b".repeat(12);
-const KEY_B = "c".repeat(43);
+const KEY_B = "c".repeat(43); // a second listed key with another label: listed, but never allowed to send
 const hash = (k) => createHash("sha256").update(k).digest("hex");
 const ENV = { REVIEW_WEBHOOK_URL: WEBHOOK, REVIEW_STAFF_KEYS: `juan:${hash(KEY_A)}, crew-1:${hash(KEY_B)}` };
 
@@ -85,6 +71,18 @@ for (const [label, env] of [["no settings", {}], ["webhook not GoHighLevel", { .
   check("authorized staff key → 200 sent", r.status === 200 && r.body.ok === true && r.body.code === "sent" && h.calls.length === 1);
   check("response not cacheable", r.headers.get("cache-control") === "no-store");
   check("upstream gets the webhook URL and a normalized payload only", h.calls[0].url === WEBHOOK && JSON.stringify(h.calls[0].body) === JSON.stringify({ full_name: "Pat Example", phone: "+17205550123" }), JSON.stringify(h.calls[0]));
+  r = await call(h, { key: KEY_B });
+  check("Juan only: another listed staff key → 403 sender_not_allowed, nothing sent", r.status === 403 && r.body.code === "sender_not_allowed" && h.calls.length === 1);
+  const onlyCrew = harness({ env: { ...ENV, REVIEW_STAFF_KEYS: `crew-1:${hash(KEY_B)}` } });
+  r = await call(onlyCrew, { key: KEY_B });
+  check("Juan only: a non-Juan key as the only entry still cannot send", r.status === 403 && onlyCrew.calls.length === 0);
+  const asJuan = harness({ env: { ...ENV, REVIEW_STAFF_KEYS: `Juan:${hash(KEY_B)}` } });
+  r = await call(asJuan, { key: KEY_B });
+  check("Juan only: a look-alike label (Juan) is a configuration error → 503, nothing sent", r.status === 503 && asJuan.calls.length === 0);
+  const rpt = "rpt_" + "r".repeat(40);
+  const reportAsStaff = harness({ env: { ...ENV, REVIEW_STAFF_KEYS: `juan:${hash(rpt)}` } });
+  r = await call(reportAsStaff, { key: rpt });
+  check("a report key (rpt_…) can never send, even if its plain hash is listed as juan", r.status === 401 && reportAsStaff.calls.length === 0);
   const revoked = harness({ env: { ...ENV, REVIEW_STAFF_KEYS: `crew-1:${hash(KEY_B)}` } });
   r = await call(revoked, { key: KEY_A });
   check("revoked key (removed from REVIEW_STAFF_KEYS) → 401", r.status === 401 && revoked.calls.length === 0);
@@ -125,7 +123,7 @@ for (const [label, env] of [["no settings", {}], ["webhook not GoHighLevel", { .
   const sameNumber = await call(h, { body: { request_id: rid(), full_name: "Pat Example", phone: "+1 720.555.0123" } });
   check("same number, new tap, other format, within 24 h: 409 recently_sent", sameNumber.status === 409 && sameNumber.body.code === "recently_sent" && h.calls.length === 1);
   const otherStaff = await call(h, { key: KEY_B, body: { request_id: rid(), full_name: "Pat Example", phone: "7205550123" } });
-  check("same number from another staff member within 24 h: 409", otherStaff.status === 409 && h.calls.length === 1);
+  check("another listed staff key cannot send the same number either (403)", otherStaff.status === 403 && h.calls.length === 1);
   h.advance(24 * 3600000 + 1000);
   const later = await call(h, { body: { request_id: rid(), full_name: "Pat Example", phone: "7205550123" } });
   check("same number after 24 h: sent", later.status === 200 && h.calls.length === 2);
@@ -142,7 +140,7 @@ for (const [label, env] of [["no settings", {}], ["webhook not GoHighLevel", { .
   for (let i = 0; i < LIMITS.perHour + 1; i++) statuses.push((await call(h, { body: { request_id: rid(), full_name: "Pat Example", phone: phone(i) } })).status);
   check(`hourly limit: ${LIMITS.perHour} sent, then 429`, statuses.slice(0, LIMITS.perHour).every((s) => s === 200) && statuses.at(-1) === 429 && h.calls.length === LIMITS.perHour);
   const other = await call(h, { key: KEY_B, body: { request_id: rid(), full_name: "Pat Example", phone: phone(500) } });
-  check("limit is per staff key: another key still sends", other.status === 200);
+  check("over the limit, another listed key cannot send around it (403)", other.status === 403 && h.calls.length === LIMITS.perHour);
   h.advance(3600000);
   const nextHour = await call(h, { body: { request_id: rid(), full_name: "Pat Example", phone: phone(600) } });
   check("next hour: sends again", nextHour.status === 200);
@@ -309,6 +307,12 @@ else {
   await load(P); await fill("Pat Example", "720-555-0444"); await tap(); await sleep(400);
   v = await view();
   check("browser: rejected key is forgotten and the set-up help shows", v.key === null && v.setup && v.formHidden && /no longer valid/.test(v.status));
+
+  await js(`localStorage.setItem('jm-review-staff-key', ${JSON.stringify(KEY_B)}), true`);
+  const sentBy = api.calls.length;
+  await load(P); await fill("Pat Example", "720-555-0666"); await tap(); await sleep(400);
+  v = await view();
+  check("browser: a non-Juan staff key is refused, forgotten, and nothing is sent", api.calls.length === sentBy && v.key === null && /only the owner's phone/.test(v.status), JSON.stringify(v));
 
   ws.close(); chrome.kill(); server.close();
   await sleep(300);

@@ -96,6 +96,7 @@
         invalid_input: "Check the name and the 10-digit cell number, then try again.",
         recently_sent: "Not sent: this number already got a review request in the last 24 hours.",
         duplicate_request: "Already handled. Check GoHighLevel before sending again.",
+        hold_conflict: "Not sent: another request for this number was being sent at the same moment. Check GoHighLevel, then try again.",
         rate_limited: "Not sent: too many requests from this phone. Try again later.",
         upstream_unconfirmed: "Not confirmed: GoHighLevel did not answer in time. Check GoHighLevel before trying again.",
         upstream_rejected: "Not sent: GoHighLevel refused the request. Try again in a few minutes.",
@@ -119,6 +120,7 @@
           return res.json().catch(function () { return {}; }).then(function (body) {
             requestId = null; // definite answer: the next tap is a new request
             if (res.ok && body.ok) { show("success", "✓ Sent! Review request incoming."); form.reset(); return; }
+            if (res.status === 403 && body.code === "sender_not_allowed") { store(null); ready(); show("error", "Not sent: only the owner's phone can send review requests."); return; }
             if (res.status === 401) { store(null); ready(); show("error", "Not sent: this phone's staff access is no longer valid. Ask the owner for a new staff link."); return; }
             show("error", MESSAGES[body.code] || "Not sent. Try again.");
           });

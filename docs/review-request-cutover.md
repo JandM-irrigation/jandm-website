@@ -61,7 +61,7 @@ actions and field mapping carry over.
 6. Run **Test A**.
 7. Only after Test A passes, turn off the original workflow's trigger. This retires the webhook
    that the old page published.
-8. Retarget PR #5 to `main`, merge it, and run **Test B** (`docs/review-request-metrics.md`).
+8. Set `REVIEW_REPORT_KEYS`, retarget PR #5 to `main`, merge it, and run **Test B** (below).
 
 ## Test A — after the PR #4 deploy: sending
 
@@ -76,6 +76,26 @@ No customer is texted. Stop at the first failure and roll back as described belo
 | A5 | Juan sends **his own** name and cell number | "✓ Sent!". The text arrives from the **new** workflow (check its execution history). The original workflow shows no new execution. |
 | A6 | Juan taps Send again with the same number | "Not sent: this number already got a review request in the last 24 hours." Nothing new in GoHighLevel. |
 | A7 | Netlify → Functions → `review-request` logs | Lines show only `outcome`, `status`, `staff`, `request_id` and `ms`. No name or number. |
+
+## Test B — after the PR #5 deploy: measurement
+
+Before the merge, `REVIEW_REPORT_KEYS` must be set (secret, Functions, Production). Run the steps
+in PowerShell 7, with the report key held in a variable and never typed on the command line:
+`$k = Read-Host -MaskInput "Report key"`. No customer is texted. B4 sends nothing at all, and B5
+texts only Juan's own phone.
+
+| # | Step | Pass |
+|---|---|---|
+| B1 | Netlify deploy log | Node 22.x; `review-request`, `review-metrics` and `review-maintenance` deployed; `review-maintenance` listed as scheduled (`0 9 * * *`). |
+| B2 | `curl.exe -s https://jmirrigationco.com/api/review-metrics` (no key) | `401` `unauthorized`. A `503 not_configured` means `REVIEW_REPORT_KEYS` is missing: stop. |
+| B3 | `$env:REVIEW_REPORT_KEY = $k; node tools/review-metrics-report.mjs` | A CSV header and 28 day rows, with `delivery_confirmed` = `not_measured`. |
+| B4 | Within 24 h of Test A, Juan sends his own number again | "already got a review request in the last 24 hours". Nothing in GoHighLevel. B3 again shows today's row with `attempts` +1 and `duplicate` +1. |
+| B5 | More than 24 h after Test A, Juan sends his own number | "✓ Sent!" and the text reaches Juan. B3 shows `webhook_accepted` +1. That counts GoHighLevel's acceptance, not delivery. |
+| B6 | `curl.exe -s -o NUL -w "%{http_code}" -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $k" -d "{}" https://jmirrigationco.com/api/review-request` | `401`: the report key can never send. Nothing is counted. |
+| B7 | The day after B5, after 09:00 UTC: Netlify → Functions → `review-maintenance` logs | One `review_maintenance` line with `rollup` counts only. B3 for B5's day still shows the same numbers. |
+| B8 | Functions logs for `review-metrics` | `review_metrics_read` lines show only `outcome`, `status` and `reader: "moa-report"`. |
+
+If B fails, publish the PR #4 deploy, or revert the PR #5 merge. Sending keeps working throughout.
 
 ## Rollback
 
