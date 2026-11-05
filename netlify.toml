@@ -103,3 +103,9 @@
   to = "https://jmirrigationco.com/:splat"
   status = 301
   force = true
+
+# Netlify "Pretty URLs" post-processing rewrites internal links from /page.html to /page, while the
+# canonical URLs, sitemap and indexed pages use .html. Keeping links as written (.html) makes every
+# internal link point at the canonical URL. Extensionless URLs still resolve and canonicalize to .html.
+[build.processing.html]
+  pretty_urls = false
