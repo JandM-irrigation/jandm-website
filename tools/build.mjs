@@ -59,10 +59,17 @@ function excerpt(text, max = 300) {
   return (end > 80 ? cut.slice(0, end + 1) : cut.slice(0, cut.lastIndexOf(" "))) + " …";
 }
 
+// images/work photos ship a 640 px variant, plus a 1280 px one when the original is wider; the original
+// file closes the set. Variants are named <file>-640.webp and <file>-1280.webp.
+function workSrcset(src, width) {
+  const variants = [640, 1280].filter((x) => x < width).map((x) => `${src.replace(".webp", `-${x}.webp`)} ${x}w`);
+  return [...variants, `${src} ${width}w`].join(", ");
+}
+
 function workImg(key, { eager = false, cls = "", sizes = "(min-width: 1024px) 55vw, 100vw" } = {}) {
   const p = WORK[key];
   const load = eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
-  return `<img class="${cls}" src="${p.src}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" ${load}>`;
+  return `<img class="${cls}" src="${p.src}" srcset="${workSrcset(p.src, p.w)}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" ${load}>`;
 }
 
 // A real J&M job photo for each service card and service page hero.
@@ -72,7 +79,7 @@ const SERVICE_PHOTO = { repair: "repair", install: "install", blowouts: "freeze"
 // input gives keyboard control; pointer dragging (mouse and touch) is handled in js/main.js.
 function compareSlider(key, { sizes = "(min-width: 1024px) 33vw, 100vw" } = {}) {
   const p = BEFORE_AFTER[key];
-  const img = (x) => `<img class="ba-img" src="${x.src}" sizes="${sizes}" width="900" height="1200" alt="${esc(x.alt)}" loading="lazy" decoding="async">`;
+  const img = (x) => `<img class="ba-img" src="${x.src}" srcset="${workSrcset(x.src, 900)}" sizes="${sizes}" width="900" height="1200" alt="${esc(x.alt)}" loading="lazy" decoding="async">`;
   return `<figure class="ba">
 <div class="compare" data-compare style="--pos:50%">
 ${img(p.after)}
