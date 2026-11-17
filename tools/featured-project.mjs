@@ -134,7 +134,7 @@ ${GALLERY.map((key) => `<li class="reel__item"><figure>${picture(key, { sizes: r
 
       page: () => ({
         file: URL_PATH.slice(1), path: URL_PATH, type: "project", navCurrent: URL_PATH,
-        crumbs: [{ name: "Home", path: "/" }, { name: "Our Work", path: "/#our-work" }, { name: "Spruce Mountain Ranch", path: URL_PATH }],
+        crumbs: [{ name: "Home", path: "/" }, { name: "Spruce Mountain Ranch", path: URL_PATH }],
         title: "Spruce Mountain Ranch Irrigation Project | J&M Irrigation",
         description: "See J&M's sprinkler installation, irrigation maintenance, repairs and sod work at Spruce Mountain Ranch in Larkspur, Colorado.",
         schemaExtra: {
@@ -153,7 +153,7 @@ ${GALLERY.map((key) => `<li class="reel__item"><figure>${picture(key, { sizes: r
         ogImage: `${DIR}/ranch-aerial-1280.webp`,
         body: `<section class="case-hero">
 <div class="wrap">
-<h1>Spruce Mountain Ranch</h1>
+<h1>Spruce Mountain Ranch Irrigation Project, Larkspur</h1>
 <p class="lead">Sprinkler installation, irrigation maintenance, repairs and sod work in Larkspur, Colorado.</p>
 </div>
 <div class="wrap case-hero__media">${aerial({ eager: true, sizes: "(min-width: 1280px) 1184px, 100vw" })}</div>

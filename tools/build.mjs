@@ -562,8 +562,8 @@ const SERVICE_PAGES = [
   },
   {
     key: "install", file: "sprinkler-installation.html", photo: "install", proof: ["street", "patio"],
-    title: "Sprinkler System Installation in Castle Rock, Colorado Springs & Denver | J&M Irrigation",
-    description: "New irrigation systems for larger lots, acreage and new landscapes in Castle Rock, Douglas County, Colorado Springs and Denver: zone plan, install, controller, full test.",
+    title: "Sprinkler Installation in Castle Rock & Colorado Springs | J&M Irrigation",
+    description: "New irrigation systems for larger lots and acreage in Castle Rock, Douglas County, Colorado Springs and Denver: zone plan, install, controller and full test.",
     h1: "Sprinkler System Installation for Castle Rock, Douglas County, Colorado Springs &amp; Denver",
     lead: "Complete new irrigation systems for new landscapes, larger lots and acreage, planned for your soil, slopes and Colorado's weather.",
     intro: "A sprinkler system is only as good as its install. On a large property a poor layout means dry spots, wasted water and years of repairs, so J&amp;M plans every zone around the land before trenching starts.",
@@ -622,9 +622,9 @@ const SERVICE_PAGES = [
   },
   {
     key: "sod", file: "sod-installation.html", photo: "sod", proof: ["sod"], gallery: ["shed", "pines"],
-    title: "Sod Installation in Denver, CO | J&M Irrigation",
-    description: "Site assessment, soil and grading prep, fresh sod and sprinklers set for new-lawn watering, with a watering handoff. J&M Irrigation, Denver and the Front Range.",
-    h1: "Sod Installation in Denver, CO",
+    title: "Sod Installation in Castle Rock, Douglas County & Denver | J&M Irrigation",
+    description: "Sod for Castle Rock, Douglas County, Colorado Springs and Denver: site assessment, soil and grading prep, fresh sod, new-lawn sprinkler setup, watering handoff.",
+    h1: "Sod Installation for Castle Rock, Douglas County &amp; Denver",
     lead: "Fresh sod on properly prepared soil, with the sprinklers to keep it alive.",
     intro: "New sod only thrives if the ground under it is ready and the watering is right. Because J&amp;M does both sod and irrigation, your new lawn is set up from the start.",
     listTitle: "What affects the quote",
@@ -653,6 +653,16 @@ for (const sp of SERVICE_PAGES) {
 <h2 id="install-areas">Where J&amp;M installs new systems</h2>
 <p class="intro">New installations are a priority in Castle Rock and the rest of Douglas County, including Parker and Larkspur, and in Colorado Springs. J&amp;M also serves Denver, Aurora, Thornton and Commerce City.</p>
 <ul class="area-links area-links--inline">${CITIES.map((c) => `<li><a href="${c.path}">${esc(c.label)}</a></li>`).join("")}</ul>
+</div>
+</section>
+
+` : "";
+  // The sod page links to the four priority city pages, which each list sod installation.
+  const sodAreas = sp.key === "sod" ? `<section class="section section--pale" aria-labelledby="sod-areas">
+<div class="wrap">
+<h2 id="sod-areas">Where J&amp;M installs sod</h2>
+<p class="intro">J&amp;M installs sod in Castle Rock, Parker, Larkspur and Colorado Springs. In Colorado Springs, sod is offered as part of a larger project.</p>
+<ul class="area-links area-links--inline">${["castle-rock", "parker", "larkspur", "colorado-springs"].map((k) => city(k)).map((c) => `<li><a href="${c.path}">${esc(c.label)}</a></li>`).join("")}</ul>
 </div>
 </section>
 
@@ -697,7 +707,7 @@ ${proof}${gallery}
 
 ${projectRef}
 
-${installAreas}<section class="section" aria-labelledby="faq-title">
+${installAreas}${sodAreas}<section class="section" aria-labelledby="faq-title">
 <div class="wrap grid-12 faq-wrap">
 <h2 id="faq-title">Questions we hear a lot</h2>
 ${faqList(sp.faqs)}
@@ -749,10 +759,10 @@ const CITY_PAGES = {
     note: "Booking a blowout? Let us know how many zones your system has, if you know.",
   },
   parker: {
-    title: "Sprinkler Systems in Parker, CO | J&M Irrigation",
+    title: "Sprinkler System Installation in Parker, CO | J&M Irrigation",
     description: "Sprinkler installation, repair, blowouts, spring start-ups and sod in Parker, CO. Request a quote or call or text 303-549-0712.",
     eyebrow: "Parker · Douglas County, Colorado",
-    h1: "Sprinkler Systems in Parker, CO, Done Right",
+    h1: "Sprinkler System Installation in Parker, CO",
     lead: "J&amp;M installs new sprinkler systems in Parker, from typical yards to larger lots, with zones planned around slopes and sun. Repairs and seasonal service too.",
     note: "Tell us whether you need a new system, a repair or seasonal service, and we will confirm the next step.",
   },
